@@ -1,0 +1,113 @@
+package chemos.chem_os.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@Entity
+@Table(name = "purchases")
+public class Purchase {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private String id;
+
+    @Column(name = "company_to")
+    private String companyTo;
+
+    @Column(name = "purchase_type")
+    private String purchaseType;
+
+    @Column(name = "company_from")
+    private String companyFrom;
+
+    private String product;
+
+    @Column(name = "vessel_name")
+    private String vesselName;
+
+    private String shipment;
+
+    private Double quantity;
+
+    @Column(name = "price_fc", precision = 19, scale = 4)
+    private BigDecimal priceFc;
+
+    private String currency;
+
+    @Column(name = "offer_usd", precision = 19, scale = 4)
+    private BigDecimal offerUsd;
+
+    @Column(name = "exchange_rate", precision = 19, scale = 4)
+    private BigDecimal exchangeRate;
+
+    @Column(name = "price_inr", precision = 19, scale = 4)
+    private BigDecimal priceInr;
+
+    @Column(name = "delivery_term")
+    private String deliveryTerm;
+
+    @Column(name = "payment_days")
+    private Integer paymentDays;
+
+    private String port;
+
+    @Column(name = "market_price", precision = 19, scale = 4)
+    private BigDecimal marketPrice;
+
+    @Column(name = "market_status")
+    private String marketStatus;
+
+    @Column(name = "cost_price", precision = 19, scale = 4)
+    private BigDecimal costPrice;
+
+    @Column(name = "replacement_cost", precision = 19, scale = 4)
+    private BigDecimal replacementCost;
+
+    private String make;
+
+    private String packaging;
+
+    private String origin;
+
+    @Column(precision = 19, scale = 4)
+    private BigDecimal expense;
+
+    @Column(name = "custom_duty", precision = 19, scale = 4)
+    private BigDecimal customDuty;
+
+    @Column(precision = 19, scale = 4)
+    private BigDecimal sws;
+
+    @Column(name = "additional_charge", precision = 19, scale = 4)
+    private BigDecimal add;
+
+    @Column(name = "other_expense", precision = 19, scale = 4)
+    private BigDecimal otherExpense;
+
+    @Column(name = "discharge_ports")
+    private String dischargePorts;
+
+    @Column(name = "price_type")
+    private String priceType;
+
+    @Column(name = "payment_term")
+    private String paymentTerm;
+
+    private LocalDate etd;
+
+    private LocalDate eta;
+
+
+
+}

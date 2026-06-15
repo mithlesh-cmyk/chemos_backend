@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: chemos-postgres
+    restart: always
+
+    environment:
+      POSTGRES_DB: chemos
+      POSTGRES_USER: chemos
+      POSTGRES_PASSWORD: chemos@123
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

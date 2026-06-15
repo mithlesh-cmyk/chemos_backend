@@ -1,0 +1,8 @@
+package chemos.chem_os.repository;
+
+import chemos.chem_os.model.Purchase;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PurchaseRepository extends JpaRepository<Purchase, String> {
+
+}
