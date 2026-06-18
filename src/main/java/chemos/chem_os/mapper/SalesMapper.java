@@ -32,6 +32,8 @@ public class SalesMapper {
                 .message(request.message())
                 .vesselName(request.vesselName())
                 .remarks(request.remarks())
+                .salesPerson(request.salesPerson())
+                .brokerName(request.brokerName())
                 .build();
 
     }

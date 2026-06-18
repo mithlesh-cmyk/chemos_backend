@@ -4,10 +4,11 @@ import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,8 +26,8 @@ public class SalesController {
     }
 
     @GetMapping("/allSales")
-    public ResponseEntity<List<Sales>> getAllSales() {
-        List<Sales> sales = salesService.getAllSales();
+    public ResponseEntity<Page<Sales>> getAllSales(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Sales> sales = salesService.getAllSales(pageable);
         return ResponseEntity.ok(sales);
     }
 

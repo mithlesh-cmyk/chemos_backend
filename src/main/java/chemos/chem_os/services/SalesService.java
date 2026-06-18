@@ -5,12 +5,11 @@ import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +23,8 @@ public class SalesService {
         return salesRepository.save(sales);
     }
 
-    public List<Sales> getAllSales() {
-        return salesRepository.findAll();
+    public Page<Sales> getAllSales(Pageable pageable) {
+        return salesRepository.findAll(pageable);
     }
 
     public Sales getSaleById(String id) {

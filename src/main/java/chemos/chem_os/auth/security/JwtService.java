@@ -3,6 +3,7 @@ package chemos.chem_os.auth.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -10,7 +11,8 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String secret = "hellobabyhowareyoumyfriend123456";
+    @Value("${jwt.secret}")
+    private String secret;
 
     public String generateToken(String username){
 
