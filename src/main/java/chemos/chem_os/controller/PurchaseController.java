@@ -1,6 +1,7 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
+import chemos.chem_os.dto.UpdatePurchaseRequest;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,14 @@ public class PurchaseController {
     public ResponseEntity<Purchase> getPurchaseById(@PathVariable String id){
         Purchase purchase = purchaseService.getPurchaseById(id);
 
+        return ResponseEntity.ok(purchase);
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Purchase> updatePurchase(
+            @PathVariable String id,
+            @RequestBody UpdatePurchaseRequest updateRequest) {
+        Purchase purchase = purchaseService.updatePurchase(id, updateRequest);
         return ResponseEntity.ok(purchase);
     }
 }

@@ -3,6 +3,7 @@ package chemos.chem_os.mapper;
 import chemos.chem_os.dto.CreatePurchaseRequest;
 import chemos.chem_os.model.Purchase;
 import org.springframework.stereotype.Component;
+import chemos.chem_os.dto.UpdatePurchaseRequest;
 
 @Component
 public class PurchaseMapper {
@@ -42,5 +43,40 @@ public class PurchaseMapper {
                 .etd(request.etd())
                 .eta(request.eta())
                 .build();
+    }
+
+    public void updateEntity(Purchase purchase, UpdatePurchaseRequest request) {
+        purchase.setCompanyTo(request.companyTo());
+        purchase.setPurchaseType(request.purchaseType());
+        purchase.setCompanyFrom(request.companyFrom());
+        purchase.setProduct(request.product());
+        purchase.setVesselName(request.vesselName());
+        purchase.setShipment(request.shipment());
+        purchase.setQuantity(request.quantity());
+        purchase.setPriceFc(request.priceFc());
+        purchase.setCurrency(request.currency());
+        purchase.setOfferUsd(request.offerUsd());
+        purchase.setExchangeRate(request.exchangeRate());
+        purchase.setPriceInr(request.priceInr());
+        purchase.setDeliveryTerm(request.deliveryTerm());
+        purchase.setPaymentDays(request.paymentDays());
+        purchase.setPort(request.port());
+        purchase.setMarketPrice(request.marketPrice());
+        purchase.setMarketStatus(request.marketStatus());
+        purchase.setCostPrice(request.costPrice());
+        purchase.setReplacementCost(request.replacementCost());
+        purchase.setMake(request.make());
+        purchase.setPackaging(request.packaging());
+        purchase.setOrigin(request.origin());
+        purchase.setExpense(request.expense());
+        purchase.setCustomDuty(request.customDuty());
+        purchase.setSws(request.sws());
+        purchase.setAdd(request.add());
+        purchase.setOtherExpense(request.otherExpense());
+        purchase.setDischargePorts(request.dischargePorts());
+        purchase.setPriceType(request.priceType());
+        purchase.setPaymentTerm(request.paymentTerm());
+        purchase.setEtd(request.etd());
+        purchase.setEta(request.eta());
     }
 }
