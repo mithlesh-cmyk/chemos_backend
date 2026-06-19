@@ -49,7 +49,6 @@ public class PurchaseService {
                 ));
 
         purchaseMapper.updateEntity(purchase, updateRequest);
-
         return purchaseRepository.save(purchase);
     }
 }
