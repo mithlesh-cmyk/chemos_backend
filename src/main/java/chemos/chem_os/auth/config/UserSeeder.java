@@ -36,13 +36,20 @@ public class UserSeeder implements CommandLineRunner {
     public void run(String... args) {
         if (userRepository.count() == 0) {
             Role adminRole = roleRepository.findByName("ADMIN")
-                    .orElseThrow(() -> new IllegalStateException(
-                            "ADMIN role not found in DB. Make sure the roles table has a row with name='ADMIN'."));
+                    .orElseGet(() -> {
+                        Role role = new Role();
+                        role.setId("admin");
+                        role.setName("ADMIN");
+                        role.setDisplayName("Administrator");
+                        return roleRepository.save(role);
+                    });
 
             User admin = new User();
             admin.setUsername(adminUsername);
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setIsActive(true);
+            admin.setName(adminName);
+            admin.setEmail(adminEmail);
             admin.setRole(adminRole);
 
             userRepository.save(admin);

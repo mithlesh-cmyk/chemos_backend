@@ -30,13 +30,20 @@ jobs:
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Write env file
+        env:
+          DEV_DB_URL: ${{ secrets.DEV_DB_URL }}
+          DEV_DB_USERNAME: ${{ secrets.DEV_DB_USERNAME }}
+          DEV_DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
+          DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
         run: |
-          cat > /tmp/app-dev.env << 'ENVEOF'
-          DB_URL=${{ secrets.DEV_DB_URL }}
-          DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
-          DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
-          JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
-          ENVEOF
+          {
+            printf 'SPRING_PROFILES_ACTIVE=prod\n'
+            printf 'SERVER_PORT=8082\n'
+            printf 'DB_URL=%s\n' "$DEV_DB_URL"
+            printf 'DB_USERNAME=%s\n' "$DEV_DB_USERNAME"
+            printf 'DB_PASSWORD=%s\n' "$DEV_DB_PASSWORD"
+            printf 'JWT_SECRET=%s\n' "$DEV_JWT_SECRET"
+          } > /tmp/app-dev.env
 
       - name: Upload JAR and env to EC2
         run: |
