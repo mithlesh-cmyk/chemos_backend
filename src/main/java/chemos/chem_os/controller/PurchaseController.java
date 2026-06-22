@@ -1,6 +1,8 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
+import chemos.chem_os.dto.PurchaseComparisonRequest;
+import chemos.chem_os.dto.PurchaseComparisonResponse;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
 import lombok.RequiredArgsConstructor;
@@ -34,5 +36,10 @@ public class PurchaseController {
         Purchase purchase = purchaseService.getPurchaseById(id);
 
         return ResponseEntity.ok(purchase);
+    }
+
+    @PostMapping("/compare")
+    public ResponseEntity<PurchaseComparisonResponse> comparePurchases(@RequestBody PurchaseComparisonRequest request) {
+        return ResponseEntity.ok(purchaseService.comparePurchases(request.purchaseIds()));
     }
 }

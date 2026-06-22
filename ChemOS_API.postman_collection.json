@@ -1,0 +1,508 @@
+{
+  "info": {
+    "name": "ChemOS API",
+    "_postman_id": "chemos-api-collection-v1",
+    "description": "ChemOS API Collection — Base URL: http://localhost:8081\n\nWorkflow:\n1. Run 'Login' first — the token is saved automatically to {{token}}.\n2. All other requests use {{token}} via the Authorization header.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('Token saved:', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Get a JWT token. No auth required.\n\nThe Tests script automatically saves the token to {{token}} for use in all subsequent requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Create User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"secret123\",\n  \"roleId\": \"admin\",\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "users"]
+            },
+            "description": "Create a new user. Requires ADMIN role.\n\nFields:\n- username: unique login name\n- password: min 6 characters\n- roleId: role identifier (e.g. \"admin\")\n- name: display name\n- email: valid email address"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "users"]
+            },
+            "description": "List all users. Requires ADMIN role.\n\nReturns an array of UserResponse objects with id, username, isActive, role, and roleDisplay."
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle User Active (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/john_doe/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "users", "john_doe", "toggle"]
+            },
+            "description": "Toggle the active/inactive status of a user. Requires ADMIN role.\n\nReplace 'john_doe' in the URL with the target username."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Create Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme Chemicals Pvt Ltd\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/create-company",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "create-company"]
+            },
+            "description": "Create a new company. Returns 201 Created."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/search?query=acme",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "companies", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "acme",
+                  "description": "Search text (optional)"
+                }
+              ]
+            },
+            "description": "Search / autocomplete companies by name."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Countries",
+      "item": [
+        {
+          "name": "Search Countries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/countries/search?query=ind&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "countries", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "ind",
+                  "description": "Search text (optional)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Search countries with pagination."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ports",
+      "item": [
+        {
+          "name": "Search Ports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ports/suggestions?query=mumbai&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ports", "suggestions"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "mumbai",
+                  "description": "Search text (optional)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Search ports with pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Port",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"portName\": \"Port of Singapore\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ports/createPort",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ports", "createPort"]
+            },
+            "description": "Create a new port. portName must not be blank."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/search?query=sulphuric&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "sulphuric",
+                  "description": "Search text (optional)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Page number (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Search products for dropdowns / autocomplete."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Purchase Orders",
+      "item": [
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_to\": \"Buyer Company Ltd\",\n  \"purchase_type\": \"IMPORT\",\n  \"company_from\": \"Seller Company Ltd\",\n  \"product\": \"Sulphuric Acid\",\n  \"vessel_name\": \"MV Ocean Star\",\n  \"shipment\": \"FCL\",\n  \"quantity\": 500.0,\n  \"offer_usd\": 350.00,\n  \"exchange_rate\": 83.50,\n  \"price_inr\": 29225.00,\n  \"delivery_term\": \"CIF\",\n  \"payment_days\": 30,\n  \"port\": \"Mumbai Port\",\n  \"market_status\": \"FIRM\",\n  \"market_price\": 360.00,\n  \"cost_price\": 340.00,\n  \"replacement_cost\": 345.00,\n  \"price_fc\": 350.00,\n  \"make\": \"Industrial Grade\",\n  \"packaging\": \"Bulk\",\n  \"origin\": \"China\",\n  \"expense\": 5000.00,\n  \"custom_duty\": 7.50,\n  \"sws\": 10.00,\n  \"add\": 2.00,\n  \"other_expense\": 1500.00,\n  \"discharge_ports\": \"Mumbai, JNPT\",\n  \"price_type\": \"FIXED\",\n  \"payment_term\": \"LC 30 days\",\n  \"etd\": \"2026-07-01\",\n  \"eta\": \"2026-07-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/purchase/create/purchase_order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "purchase", "create", "purchase_order"]
+            },
+            "description": "Create a new purchase order. Returns 201 Created with the full purchase order object."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Purchase Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/purchase/allPurchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "purchase", "allPurchase"]
+            },
+            "description": "Retrieve all purchase orders."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Purchase Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/purchase/PO-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "purchase", "PO-001"]
+            },
+            "description": "Get a single purchase order by ID. Replace 'PO-001' in the URL with the actual ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sales Orders",
+      "item": [
+        {
+          "name": "Create Sales Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salesType\": \"SELL\",\n  \"companyTo\": \"Customer Pvt Ltd\",\n  \"companyFrom\": \"Our Company Ltd\",\n  \"product\": \"Sulphuric Acid\",\n  \"quantity\": 200.0,\n  \"price\": 380.00,\n  \"payment\": \"LC 60 days\",\n  \"deliveryTerm\": \"CFR\",\n  \"port\": \"Mumbai Port\",\n  \"marketPrice\": 370.00,\n  \"marketStatus\": \"FIRM\",\n  \"storageDays\": 15,\n  \"make\": \"Industrial Grade\",\n  \"packaging\": \"Bulk\",\n  \"origin\": \"India\",\n  \"transitTolerance\": \"5%\",\n  \"message\": \"Standard terms apply\",\n  \"vesselName\": \"MV Chennai Express\",\n  \"remarks\": \"Priority shipment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sales/create/sales_order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sales", "create", "sales_order"]
+            },
+            "description": "Create a new sales order. salesType must be BUY, SELL, or INQUIRY. Returns 201 Created."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Sales Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sales/allSales",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sales", "allSales"]
+            },
+            "description": "Retrieve all sales orders."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sales Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sales/SO-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sales", "SO-001"]
+            },
+            "description": "Get a single sales order by ID. Replace 'SO-001' in the URL with the actual ID."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
