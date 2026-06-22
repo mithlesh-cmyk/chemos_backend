@@ -1,0 +1,69 @@
+name: Build and Deploy (development)
+
+on:
+  push:
+    branches: [development]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR (skip tests)
+        run: mvn clean package -DskipTests
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Write env file
+        run: |
+          cat > /tmp/app-dev.env << 'ENVEOF'
+          DB_URL=${{ secrets.DEV_DB_URL }}
+          DB_USERNAME=${{ secrets.DEV_DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+          ENVEOF
+
+      - name: Upload JAR and env to EC2
+        run: |
+          scp -i ~/.ssh/deploy_key /tmp/app-dev.env \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/chem-os-dev/.env"
+          scp -i ~/.ssh/deploy_key target/chem-os-*.jar \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/chem-os-dev/chem-os-new.jar"
+
+      - name: Run deploy script on EC2
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "sudo /opt/chem-os-dev/deploy-dev.sh"
+
+      - name: Health check
+        run: |
+          echo "Waiting 20s for app to start..."
+          sleep 20
+          for i in {1..12}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "http://${{ secrets.EC2_HOST }}:8082/actuator/health" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS — retrying in 5s..."
+            sleep 5
+          done
+          echo "Health check failed after 60s — deployment may have rolled back"
+          exit 1
