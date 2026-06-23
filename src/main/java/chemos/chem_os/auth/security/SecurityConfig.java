@@ -59,7 +59,7 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/login", "/error", "/actuator/health").permitAll()
+                        .requestMatchers("/api/v1/auth/login", "/error", "/actuator/health", "/actuator/info").permitAll()
                         .anyRequest().authenticated()
                 )
                 // No token at all → 401 Unauthorized

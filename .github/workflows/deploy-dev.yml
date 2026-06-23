@@ -35,14 +35,22 @@ jobs:
           DEV_DB_USERNAME: ${{ secrets.DEV_DB_USERNAME }}
           DEV_DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
           DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
+          DEV_ADMIN_USERNAME: ${{ secrets.DEV_ADMIN_USERNAME }}
+          DEV_ADMIN_PASSWORD: ${{ secrets.DEV_ADMIN_PASSWORD }}
+          DEV_ADMIN_NAME: ${{ secrets.DEV_ADMIN_NAME }}
+          DEV_ADMIN_EMAIL: ${{ secrets.DEV_ADMIN_EMAIL }}
         run: |
           {
-            printf 'SPRING_PROFILES_ACTIVE=prod\n'
+            printf 'SPRING_PROFILES_ACTIVE=dev\n'
             printf 'SERVER_PORT=8082\n'
             printf 'DB_URL=%s\n' "$DEV_DB_URL"
             printf 'DB_USERNAME=%s\n' "$DEV_DB_USERNAME"
             printf 'DB_PASSWORD=%s\n' "$DEV_DB_PASSWORD"
             printf 'JWT_SECRET=%s\n' "$DEV_JWT_SECRET"
+            printf 'APP_ADMIN_USERNAME=%s\n' "$DEV_ADMIN_USERNAME"
+            printf 'APP_ADMIN_PASSWORD=%s\n' "$DEV_ADMIN_PASSWORD"
+            printf 'APP_ADMIN_NAME=%s\n' "$DEV_ADMIN_NAME"
+            printf 'APP_ADMIN_EMAIL=%s\n' "$DEV_ADMIN_EMAIL"
           } > /tmp/app-dev.env
 
       - name: Upload JAR and env to EC2
