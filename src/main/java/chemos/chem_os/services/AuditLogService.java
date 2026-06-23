@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Slf4j
 @Service
@@ -53,7 +54,7 @@ public class AuditLogService {
                     .performedByRole(performedByRole)
                     .dataBefore(dataBefore != null ? objectMapper.writeValueAsString(dataBefore) : null)
                     .dataAfter(dataAfter != null ? objectMapper.writeValueAsString(dataAfter) : null)
-                    .performedAt(LocalDateTime.now())
+                    .performedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")))
                     .build();
 
             auditLogRepository.save(entry);
