@@ -21,10 +21,13 @@ public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
     private final PurchaseMapper purchaseMapper;
+    private final AuditLogService auditLogService;
 
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest){
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
-        return purchaseRepository.save(purchase);
+        Purchase saved = purchaseRepository.save(purchase);
+        auditLogService.log("CREATE", "PURCHASE", saved.getId(), null, saved);
+        return saved;
     }
 
     public List<Purchase> getAllPurchase() {
@@ -42,12 +45,15 @@ public class PurchaseService {
     }
 
     public Purchase confirmPurchase(String id) {
-        Purchase purchase = getPurchaseById(id);
-        if (purchase.getStatus() == EntryStatus.CONFIRMED) {
+        Purchase before = getPurchaseById(id);
+        if (before.getStatus() == EntryStatus.CONFIRMED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Purchase is already confirmed");
         }
-        purchase.setStatus(EntryStatus.CONFIRMED);
-        return purchaseRepository.save(purchase);
+        Purchase snapshot = before.toBuilder().build();
+        before.setStatus(EntryStatus.CONFIRMED);
+        Purchase saved = purchaseRepository.save(before);
+        auditLogService.log("CONFIRM", "PURCHASE", saved.getId(), snapshot, saved);
+        return saved;
     }
 
     public PurchaseComparisonResponse comparePurchases(List<String> purchaseIds) {

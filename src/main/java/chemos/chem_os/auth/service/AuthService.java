@@ -5,6 +5,7 @@ import chemos.chem_os.auth.dto.LoginRequest;
 import chemos.chem_os.auth.dto.LoginResponse;
 import chemos.chem_os.auth.dto.RoleResponse;
 import chemos.chem_os.auth.dto.UserConfigResponse;
+import chemos.chem_os.services.AuditLogService;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModuleAccess;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModulesConfig;
 import chemos.chem_os.auth.dto.UserConfigResponse.UserInfo;
@@ -34,6 +35,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final PermissionResolverService permissionResolverService;
+    private final AuditLogService auditLogService;
 
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.username())
@@ -70,7 +72,9 @@ public class AuthService {
         user.setEmail(request.email());
 
         User saved = userRepository.save(user);
-        return toResponse(saved);
+        UserResponse response = toResponse(saved);
+        auditLogService.log("CREATE", "USER", saved.getId().toString(), null, response);
+        return response;
     }
 
     public List<UserResponse> listUsers() {
@@ -88,8 +92,11 @@ public class AuthService {
     public UserResponse toggleUserActive(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        UserResponse before = toResponse(user);
         user.setIsActive(!user.getIsActive());
-        return toResponse(userRepository.save(user));
+        UserResponse after = toResponse(userRepository.save(user));
+        auditLogService.log("UPDATE", "USER", user.getId().toString(), before, after);
+        return after;
     }
 
     @Transactional(readOnly = true)

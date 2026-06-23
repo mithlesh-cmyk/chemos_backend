@@ -18,10 +18,13 @@ public class SalesService {
 
     private final SalesRepository salesRepository;
     private final SalesMapper salesMapper;
+    private final AuditLogService auditLogService;
 
     public Sales createSale(CreateSaleRequest request){
         Sales sales = salesMapper.toEntity(request);
-        return salesRepository.save(sales);
+        Sales saved = salesRepository.save(sales);
+        auditLogService.log("CREATE", "SALE", saved.getId(), null, saved);
+        return saved;
     }
 
     public Page<Sales> getAllSales(Pageable pageable) {
@@ -37,11 +40,14 @@ public class SalesService {
     }
 
     public Sales confirmSale(String id) {
-        Sales sale = getSaleById(id);
-        if (sale.getStatus() == EntryStatus.CONFIRMED) {
+        Sales before = getSaleById(id);
+        if (before.getStatus() == EntryStatus.CONFIRMED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Sale is already confirmed");
         }
-        sale.setStatus(EntryStatus.CONFIRMED);
-        return salesRepository.save(sale);
+        Sales snapshot = before.toBuilder().build();
+        before.setStatus(EntryStatus.CONFIRMED);
+        Sales saved = salesRepository.save(before);
+        auditLogService.log("CONFIRM", "SALE", saved.getId(), snapshot, saved);
+        return saved;
     }
 }
