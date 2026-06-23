@@ -44,16 +44,21 @@ public class UserSeeder implements CommandLineRunner {
                         return roleRepository.save(role);
                     });
 
+            String username = adminUsername.isBlank() ? "admin" : adminUsername;
+            String password = adminPassword.isBlank() ? "changeme123" : adminPassword;
+            String name     = adminName.isBlank()     ? "Administrator"    : adminName;
+            String email    = adminEmail.isBlank()    ? "admin@chemos.com" : adminEmail;
+
             User admin = new User();
-            admin.setUsername(adminUsername);
-            admin.setPassword(passwordEncoder.encode(adminPassword));
+            admin.setUsername(username);
+            admin.setPassword(passwordEncoder.encode(password));
             admin.setIsActive(true);
-            admin.setName(adminName);
-            admin.setEmail(adminEmail);
+            admin.setName(name);
+            admin.setEmail(email);
             admin.setRole(adminRole);
 
             userRepository.save(admin);
-            log.warn("=== Created default admin user: '{}' — change the password immediately! ===", adminUsername);
+            log.warn("=== Created default admin user: '{}' — change the password immediately! ===", username);
         }
     }
 }
