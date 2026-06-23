@@ -2,6 +2,7 @@ package chemos.chem_os.services;
 
 import chemos.chem_os.dto.*;
 import chemos.chem_os.mapper.PurchaseMapper;
+import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.PurchaseRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,15 @@ public class PurchaseService {
                                 "Purchase not found with id: " + id
                         )
                         ));
+    }
+
+    public Purchase confirmPurchase(String id) {
+        Purchase purchase = getPurchaseById(id);
+        if (purchase.getStatus() == EntryStatus.CONFIRMED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Purchase is already confirmed");
+        }
+        purchase.setStatus(EntryStatus.CONFIRMED);
+        return purchaseRepository.save(purchase);
     }
 
     public PurchaseComparisonResponse comparePurchases(List<String> purchaseIds) {

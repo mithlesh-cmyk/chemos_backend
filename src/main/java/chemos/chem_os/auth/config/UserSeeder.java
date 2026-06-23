@@ -9,10 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
+// Replaced by DataSeeder — kept for reference only.
+// @Component
 @RequiredArgsConstructor
 public class UserSeeder implements CommandLineRunner {
 

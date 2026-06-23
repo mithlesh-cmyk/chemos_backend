@@ -108,6 +108,8 @@ public class Purchase {
 
     private LocalDate eta;
 
-
-
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private EntryStatus status = EntryStatus.UNCONFIRMED;
 }

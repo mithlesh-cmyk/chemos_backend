@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -87,4 +88,9 @@ public class Sales {
 
     @Column(name = "broker_name")
     private String brokerName;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private EntryStatus status = EntryStatus.UNCONFIRMED;
 }

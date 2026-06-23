@@ -2,6 +2,7 @@ package chemos.chem_os.services;
 
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.mapper.SalesMapper;
+import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,14 @@ public class SalesService {
                         HttpStatus.NOT_FOUND,
                         "Sale not found with id: " + id
                 ));
+    }
+
+    public Sales confirmSale(String id) {
+        Sales sale = getSaleById(id);
+        if (sale.getStatus() == EntryStatus.CONFIRMED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Sale is already confirmed");
+        }
+        sale.setStatus(EntryStatus.CONFIRMED);
+        return salesRepository.save(sale);
     }
 }
