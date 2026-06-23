@@ -5,7 +5,6 @@ import chemos.chem_os.dto.UpdatePurchaseRequest;
 import chemos.chem_os.mapper.PurchaseMapper;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.PurchaseRepository;
-//import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-//@Transactional can be used for more safety
 
 public class PurchaseService {
 

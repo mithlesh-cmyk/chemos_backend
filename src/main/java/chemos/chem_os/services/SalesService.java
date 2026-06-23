@@ -1,12 +1,12 @@
 package chemos.chem_os.services;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -34,5 +34,17 @@ public class SalesService {
                         HttpStatus.NOT_FOUND,
                         "Sale not found with id: " + id
                 ));
+    }
+
+    public Sales updateSale(String id, UpdateSaleRequest updateRequest) {
+        Sales sale = salesRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Sale not found with id: " + id
+                ));
+
+        salesMapper.updateEntity(sale, updateRequest);
+
+        return salesRepository.save(sale);
     }
 }

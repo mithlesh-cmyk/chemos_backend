@@ -1,6 +1,7 @@
 package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
 import org.springframework.stereotype.Component;
 
@@ -34,5 +35,26 @@ public class SalesMapper {
                 .remarks(request.remarks())
                 .build();
 
+    }
+    public void updateEntity(Sales sale, UpdateSaleRequest request) {
+        sale.setSalesType(request.salesType());
+        sale.setCompanyTo(request.companyTo());
+        sale.setCompanyFrom(request.companyFrom());
+        sale.setProduct(request.product());
+        sale.setQuantity(request.quantity());
+        sale.setPrice(request.price());
+        sale.setPayment(request.payment());
+        sale.setDeliveryTerm(request.deliveryTerm());
+        sale.setPort(request.port());
+        sale.setMarketPrice(request.marketPrice());
+        sale.setMarketStatus(request.marketStatus());
+        sale.setStorageDays(request.storageDays());
+        sale.setMake(request.make());
+        sale.setPackaging(request.packaging());
+        sale.setOrigin(request.origin());
+        sale.setTransitTolerance(request.transitTolerance());
+        sale.setMessage(request.message());
+        sale.setVesselName(request.vesselName());
+        sale.setRemarks(request.remarks());
     }
 }

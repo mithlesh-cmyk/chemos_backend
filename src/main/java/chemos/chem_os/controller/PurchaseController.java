@@ -18,20 +18,20 @@ public class PurchaseController {
     private final PurchaseService purchaseService;
 
     @PostMapping("/create/purchase_order")
-    public ResponseEntity<Purchase> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest){
+    public ResponseEntity<Purchase> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest) {
         Purchase purchase = purchaseService.createPurchase(purchaseRequest);
 
         return ResponseEntity.ok(purchase);
     }
 
     @GetMapping("/allPurchase")
-    public ResponseEntity<List<Purchase>> getAllPurchase(){
+    public ResponseEntity<List<Purchase>> getAllPurchase() {
         List<Purchase> purchaseList = purchaseService.getAllPurchase();
         return ResponseEntity.ok(purchaseList);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Purchase> getPurchaseById(@PathVariable String id){
+    public ResponseEntity<Purchase> getPurchaseById(@PathVariable String id) {
         Purchase purchase = purchaseService.getPurchaseById(id);
 
         return ResponseEntity.ok(purchase);
@@ -44,4 +44,11 @@ public class PurchaseController {
         Purchase purchase = purchaseService.updatePurchase(id, updateRequest);
         return ResponseEntity.ok(purchase);
     }
+
+//  @PatchMapping("/update/{id}") request payload from url is taken!
+//    public ResponseEntity<Purchase> partialUpdatePurchase(
+//        @PathVariable Long id;
+//        @RequestBody Map<>
+//    )
+
 }
