@@ -3,6 +3,7 @@ package chemos.chem_os.auth.service;
 import chemos.chem_os.auth.dto.CreateUserRequest;
 import chemos.chem_os.auth.dto.LoginRequest;
 import chemos.chem_os.auth.dto.LoginResponse;
+import chemos.chem_os.auth.dto.RoleResponse;
 import chemos.chem_os.auth.dto.UserConfigResponse;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModuleAccess;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModulesConfig;
@@ -75,6 +76,12 @@ public class AuthService {
     public List<UserResponse> listUsers() {
         return userRepository.findAll().stream()
                 .map(this::toResponse)
+                .toList();
+    }
+
+    public List<RoleResponse> listRoles() {
+        return roleRepository.findAll().stream()
+                .map(r -> new RoleResponse(r.getId(), r.getName(), r.getDisplayName()))
                 .toList();
     }
 

@@ -3,6 +3,7 @@ package chemos.chem_os.auth.controller;
 import chemos.chem_os.auth.dto.CreateUserRequest;
 import chemos.chem_os.auth.dto.LoginRequest;
 import chemos.chem_os.auth.dto.LoginResponse;
+import chemos.chem_os.auth.dto.RoleResponse;
 import chemos.chem_os.auth.dto.UserConfigResponse;
 import chemos.chem_os.auth.dto.UserResponse;
 import chemos.chem_os.auth.service.AuthService;
@@ -51,5 +52,11 @@ public class AuthController {
     @PatchMapping("/users/{username}/toggle")
     public ResponseEntity<UserResponse> toggleActive(@PathVariable String username) {
         return ResponseEntity.ok(authService.toggleUserActive(username));
+    }
+
+    @PreAuthorize("hasAuthority('USER_MANAGEMENT')")
+    @GetMapping("/roles")
+    public ResponseEntity<List<RoleResponse>> listRoles() {
+        return ResponseEntity.ok(authService.listRoles());
     }
 }
