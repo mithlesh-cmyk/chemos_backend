@@ -21,21 +21,21 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_CREATE')")
     @PostMapping("/create/purchase_order")
-    public ResponseEntity<Purchase> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest){
+    public ResponseEntity<Purchase> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest) {
         Purchase purchase = purchaseService.createPurchase(purchaseRequest);
         return ResponseEntity.ok(purchase);
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
-    public ResponseEntity<List<Purchase>> getAllPurchase(){
+    public ResponseEntity<List<Purchase>> getAllPurchase() {
         List<Purchase> purchaseList = purchaseService.getAllPurchase();
         return ResponseEntity.ok(purchaseList);
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/{id}")
-    public ResponseEntity<Purchase> getPurchaseById(@PathVariable String id){
+    public ResponseEntity<Purchase> getPurchaseById(@PathVariable String id) {
         Purchase purchase = purchaseService.getPurchaseById(id);
         return ResponseEntity.ok(purchase);
     }

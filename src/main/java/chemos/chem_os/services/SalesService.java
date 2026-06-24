@@ -1,6 +1,7 @@
 package chemos.chem_os.services;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Sales;

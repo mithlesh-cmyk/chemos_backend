@@ -1,6 +1,7 @@
 package chemos.chem_os.services;
 
-import chemos.chem_os.dto.*;
+import chemos.chem_os.dto.CreatePurchaseRequest;
+import chemos.chem_os.dto.UpdatePurchaseRequest;
 import chemos.chem_os.mapper.PurchaseMapper;
 import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Purchase;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+
 public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
@@ -44,83 +46,14 @@ public class PurchaseService {
                         ));
     }
 
-    public Purchase confirmPurchase(String id) {
-        Purchase before = getPurchaseById(id);
-        if (before.getStatus() == EntryStatus.CONFIRMED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Purchase is already confirmed");
-        }
-        Purchase snapshot = before.toBuilder().build();
-        before.setStatus(EntryStatus.CONFIRMED);
-        Purchase saved = purchaseRepository.save(before);
-        auditLogService.log("CONFIRM", "PURCHASE", saved.getId(), snapshot, saved);
-        return saved;
-    }
+    public Purchase updatePurchase(String id, UpdatePurchaseRequest updateRequest) {
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase not found with id: " + id
+                ));
 
-    public PurchaseComparisonResponse comparePurchases(List<String> purchaseIds) {
-        if (purchaseIds == null || purchaseIds.size() < 2) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Provide at least 2 purchase IDs to compare");
-        }
-
-        List<Purchase> purchases = purchaseRepository.findAllById(purchaseIds);
-
-        if (purchases.size() != purchaseIds.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "One or more purchases not found");
-        }
-
-        List<PurchaseComparisonItem> items = purchases.stream()
-                .map(this::toComparisonItem)
-                .toList();
-
-        return new PurchaseComparisonResponse(items, computeHighlights(items));
-    }
-
-    private PurchaseComparisonItem toComparisonItem(Purchase p) {
-        BigDecimal landedCost = Stream.of(p.getPriceInr(), p.getExpense(), p.getCustomDuty(),
-                        p.getSws(), p.getAdd(), p.getOtherExpense())
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return new PurchaseComparisonItem(
-                p.getId(),
-                p.getCompanyFrom(),
-                p.getQuantity(),
-                p.getDeliveryTerm(),
-                p.getPriceFc(),
-                p.getCurrency(),
-                p.getExchangeRate(),
-                p.getPriceInr(),
-                p.getEta(),
-                p.getExpense(),
-                p.getCustomDuty(),
-                p.getSws(),
-                p.getAdd(),
-                p.getOtherExpense(),
-                landedCost
-        );
-    }
-
-    private Map<String, FieldHighlight> computeHighlights(List<PurchaseComparisonItem> items) {
-        Map<String, FieldHighlight> highlights = new LinkedHashMap<>();
-        highlights.put("price_fc", computeHighlight(items, PurchaseComparisonItem::priceFc));
-        highlights.put("price_inr_per_mt", computeHighlight(items, PurchaseComparisonItem::priceInrPerMt));
-        highlights.put("landed_cost_per_mt", computeHighlight(items, PurchaseComparisonItem::landedCostPerMt));
-        return highlights;
-    }
-
-    private FieldHighlight computeHighlight(List<PurchaseComparisonItem> items,
-                                            Function<PurchaseComparisonItem, BigDecimal> extractor) {
-        String bestId = null, worstId = null;
-        BigDecimal min = null, max = null;
-
-        for (PurchaseComparisonItem item : items) {
-            BigDecimal val = extractor.apply(item);
-            if (val == null) continue;
-            if (min == null || val.compareTo(min) < 0) { min = val; bestId = item.id(); }
-            if (max == null || val.compareTo(max) > 0) { max = val; worstId = item.id(); }
-        }
-
-        return new FieldHighlight(bestId, worstId);
+        purchaseMapper.updateEntity(purchase, updateRequest);
+        return purchaseRepository.save(purchase);
     }
 }

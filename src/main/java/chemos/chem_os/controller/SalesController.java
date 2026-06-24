@@ -1,6 +1,7 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
