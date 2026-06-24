@@ -40,6 +40,15 @@ public class SalesService {
                 ));
     }
 
+    public Sales updateSale(String id, UpdateSaleRequest request) {
+        Sales sale = getSaleById(id);
+        Sales snapshot = sale.toBuilder().build();
+        salesMapper.updateEntity(sale, request);
+        Sales saved = salesRepository.save(sale);
+        auditLogService.log("UPDATE", "SALE", saved.getId(), snapshot, saved);
+        return saved;
+    }
+
     public Sales confirmSale(String id) {
         Sales before = getSaleById(id);
         if (before.getStatus() == EntryStatus.CONFIRMED) {
