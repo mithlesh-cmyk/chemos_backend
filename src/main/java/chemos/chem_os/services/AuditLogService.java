@@ -4,7 +4,7 @@ import chemos.chem_os.auth.model.User;
 import chemos.chem_os.auth.repository.UserRepository;
 import chemos.chem_os.model.AuditLog;
 import chemos.chem_os.repository.AuditLogRepository;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

@@ -29,7 +29,6 @@ public class Sales {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "sale_type")
     private String salesType;
 
