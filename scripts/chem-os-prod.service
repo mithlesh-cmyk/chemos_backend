@@ -1,0 +1,31 @@
+[Unit]
+Description=Chem OS Spring Boot Application (production)
+After=network.target
+
+[Service]
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/opt/chem-os
+
+EnvironmentFile=/opt/chem-os/.env
+
+ExecStart=/usr/bin/java \
+  -Xms512m -Xmx1024m \
+  -jar /opt/chem-os/chem-os-current.jar \
+  --spring.profiles.active=prod \
+  --server.port=8083
+
+ExecStop=/bin/kill -SIGTERM $MAINPID
+SuccessExitStatus=143
+
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=120
+StartLimitBurst=3
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chem-os
+
+[Install]
+WantedBy=multi-user.target
