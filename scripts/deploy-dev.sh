@@ -35,13 +35,15 @@ chmod 600 "$APP_DIR/.env" 2>/dev/null || true
 log "Restarting $SERVICE_NAME service..."
 systemctl restart "$SERVICE_NAME"
 
-sleep 15
-
-if systemctl is-active --quiet "$SERVICE_NAME"; then
-  log "Service is active — deploy SUCCESS"
-  log "========== DEV DEPLOY END =========="
-  exit 0
-fi
+for i in $(seq 1 12); do
+  sleep 5
+  if systemctl is-active --quiet "$SERVICE_NAME"; then
+    log "Service is active (attempt $i) — deploy SUCCESS"
+    log "========== DEV DEPLOY END =========="
+    exit 0
+  fi
+  log "Attempt $i: service not yet active..."
+done
 
 log "ERROR: Service not active after restart — rolling back"
 if [ -f "$BACKUP_JAR" ]; then
