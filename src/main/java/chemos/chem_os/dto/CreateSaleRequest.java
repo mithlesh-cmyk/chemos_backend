@@ -1,9 +1,7 @@
 package chemos.chem_os.dto;
 
-import chemos.chem_os.SalesType;
-
 public record CreateSaleRequest(
-        SalesType salesType,
+        String salesType,
         
         String companyTo,
 
@@ -39,6 +37,10 @@ public record CreateSaleRequest(
 
         String vesselName,
 
-        String remarks
+        String remarks,
+
+        String salesPerson,
+
+        String brokerName
 ) {
 }

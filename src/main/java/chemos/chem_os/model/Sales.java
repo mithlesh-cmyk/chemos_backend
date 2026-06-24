@@ -1,7 +1,6 @@
 package chemos.chem_os.model;
 
 
-import chemos.chem_os.SalesType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +19,7 @@ import java.time.LocalDateTime;
 public class Sales {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
     private String id;
 
@@ -30,9 +29,8 @@ public class Sales {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "sale_type")
-    private SalesType salesType;
+    private String salesType;
 
     @Column(name = "company_to")
     private String companyTo;
@@ -87,4 +85,15 @@ public class Sales {
 
     @Column(columnDefinition = "TEXT")
     private String remarks;
+
+    @Column(name = "sales_person")
+    private String salesPerson;
+
+    @Column(name = "broker_name")
+    private String brokerName;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private EntryStatus status = EntryStatus.UNCONFIRMED;
 }

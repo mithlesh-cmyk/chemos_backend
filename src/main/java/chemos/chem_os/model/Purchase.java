@@ -18,7 +18,7 @@ import java.time.LocalDate;
 public class Purchase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
     private String id;
 
@@ -108,6 +108,8 @@ public class Purchase {
 
     private LocalDate eta;
 
-
-
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private EntryStatus status = EntryStatus.UNCONFIRMED;
 }

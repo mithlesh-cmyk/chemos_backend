@@ -1,9 +1,7 @@
 package chemos.chem_os.dto;
 
-import chemos.chem_os.SalesType;
-
 public record UpdateSaleRequest(
-        SalesType salesType,
+        String salesType,
         String companyTo,
         String companyFrom,
         String product,
