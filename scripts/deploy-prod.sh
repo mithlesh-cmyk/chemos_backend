@@ -1,6 +1,6 @@
 #!/bin/bash
-# Deployment script — runs on EC2, called by GitHub Actions
-# Place at: /opt/chem-os/deploy.sh  (sudo chmod +x, owned by root)
+# Prod deployment script — runs on EC2, called by GitHub Actions
+# Place at: /opt/chem-os/deploy-prod.sh  (sudo chmod +x, owned by root)
 set -euo pipefail
 
 APP_DIR="/opt/chem-os"
@@ -15,41 +15,36 @@ exec >> "$LOG_FILE" 2>&1
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
-log "========== DEPLOY START =========="
+log "========== PROD DEPLOY START =========="
 
 if [ ! -f "$NEW_JAR" ]; then
   log "ERROR: $NEW_JAR not found — nothing to deploy"
   exit 1
 fi
 
-# Backup current JAR
 if [ -f "$CURRENT_JAR" ]; then
   cp "$CURRENT_JAR" "$BACKUP_JAR"
   log "Backed up current JAR"
 fi
 
-# Swap JAR
 mv "$NEW_JAR" "$CURRENT_JAR"
 log "New JAR placed as current"
 
-# Fix permissions on env file
 chmod 600 "$APP_DIR/.env" 2>/dev/null || true
 
-# Restart service
 log "Restarting $SERVICE_NAME service..."
 systemctl restart "$SERVICE_NAME"
 
-# Wait for app to come up (Spring Boot typically takes 10–15s)
-sleep 15
+for i in $(seq 1 12); do
+  sleep 5
+  if systemctl is-active --quiet "$SERVICE_NAME"; then
+    log "Service is active (attempt $i) — deploy SUCCESS"
+    log "========== PROD DEPLOY END =========="
+    exit 0
+  fi
+  log "Attempt $i: service not yet active..."
+done
 
-# Verify service is running
-if systemctl is-active --quiet "$SERVICE_NAME"; then
-  log "Service is active — deploy SUCCESS"
-  log "========== DEPLOY END =========="
-  exit 0
-fi
-
-# Service failed — roll back
 log "ERROR: Service not active after restart — rolling back"
 if [ -f "$BACKUP_JAR" ]; then
   mv "$BACKUP_JAR" "$CURRENT_JAR"
@@ -64,5 +59,5 @@ else
   log "CRITICAL: No backup JAR found — service is down"
 fi
 
-log "========== DEPLOY END (FAILED) =========="
+log "========== PROD DEPLOY END (FAILED) =========="
 exit 1

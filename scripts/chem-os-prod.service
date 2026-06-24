@@ -1,30 +1,28 @@
 [Unit]
-Description=Chem OS Spring Boot Application
+Description=Chem OS Spring Boot Application (production)
 After=network.target
 
 [Service]
-User=ubuntu
-Group=ubuntu
+User=ec2-user
+Group=ec2-user
 WorkingDirectory=/opt/chem-os
 
-# Load secrets from env file — this file is NOT in git
 EnvironmentFile=/opt/chem-os/.env
 
 ExecStart=/usr/bin/java \
-  -Xms256m -Xmx512m \
+  -Xms512m -Xmx1024m \
   -jar /opt/chem-os/chem-os-current.jar \
-  --spring.profiles.active=prod
+  --spring.profiles.active=prod \
+  --server.port=8083
 
 ExecStop=/bin/kill -SIGTERM $MAINPID
 SuccessExitStatus=143
 
-# Auto-restart on crash, wait 10s between attempts
 Restart=on-failure
 RestartSec=10
 StartLimitInterval=120
 StartLimitBurst=3
 
-# Send logs to journald (view with: journalctl -u chem-os -f)
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=chem-os

@@ -41,7 +41,6 @@ public class PortService {
         if(portRepository.existsBySearchKey(searchKey)){
             throw new IllegalChannelGroupException();
         }
-
         Ports newPort = Ports.builder()
                 .displayName(sanitizedName)
                 .searchKey(searchKey)
