@@ -60,9 +60,9 @@ jobs:
           scp -i ~/.ssh/deploy_key target/chem-os-*.jar \
             "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/chem-os-dev/chem-os-new.jar"
           scp -i ~/.ssh/deploy_key scripts/deploy-dev.sh \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/chem-os-dev/deploy-dev.sh"
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/deploy-dev.sh"
           ssh -i ~/.ssh/deploy_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "sudo chmod +x /opt/chem-os-dev/deploy-dev.sh"
+            "sudo mv /tmp/deploy-dev.sh /opt/chem-os-dev/deploy-dev.sh && sudo chmod +x /opt/chem-os-dev/deploy-dev.sh"
 
       - name: Run deploy script on EC2
         run: |
