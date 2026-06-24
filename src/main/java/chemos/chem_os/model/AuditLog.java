@@ -21,10 +21,10 @@ public class AuditLog {
     private String id;
 
     @Column(name = "action", nullable = false)
-    private String action; // CREATE, UPDATE, CONFIRM
+    private String action;
 
     @Column(name = "entity_type", nullable = false)
-    private String entityType; // SALE, PURCHASE, USER
+    private String entityType;
 
     @Column(name = "entity_id")
     private String entityId;
@@ -39,10 +39,10 @@ public class AuditLog {
     private String performedByRole;
 
     @Column(name = "data_before", columnDefinition = "TEXT")
-    private String dataBefore; // JSON, null for creates
+    private String dataBefore;
 
     @Column(name = "data_after", columnDefinition = "TEXT")
-    private String dataAfter; // JSON
+    private String dataAfter;
 
     @Column(name = "performed_at", nullable = false)
     private LocalDateTime performedAt;

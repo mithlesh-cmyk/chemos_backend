@@ -60,7 +60,7 @@ public class AuditLogService {
             auditLogRepository.save(entry);
 
         } catch (Exception e) {
-            // Never let audit failure break the real operation
+
             log.error("Audit log write failed [action={} entity={} id={}]: {}", action, entityType, entityId, e.getMessage());
         }
     }
