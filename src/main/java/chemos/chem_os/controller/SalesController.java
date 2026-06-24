@@ -7,6 +7,7 @@ import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +29,7 @@ public class SalesController {
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/allSales")
-    public ResponseEntity<Page<Sales>> getAllSales(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<Sales>> getAllSales(@PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<Sales> sales = salesService.getAllSales(pageable);
         return ResponseEntity.ok(sales);
     }
@@ -38,6 +39,12 @@ public class SalesController {
     public ResponseEntity<Sales> getSaleById(@PathVariable String id){
         Sales sales = salesService.getSaleById(id);
         return ResponseEntity.ok(sales);
+    }
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PutMapping("/{id}")
+    public ResponseEntity<Sales> updateSale(@PathVariable String id, @RequestBody UpdateSaleRequest request) {
+        return ResponseEntity.ok(salesService.updateSale(id, request));
     }
 
     @PreAuthorize("hasAuthority('SALE_APPROVE')")
