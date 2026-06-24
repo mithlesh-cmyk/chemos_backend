@@ -17,14 +17,6 @@ public class SalesController {
 
     private final SalesService salesService;
 
-    @PostMapping("/create/sales_order")
-    public ResponseEntity<Sales> salesForm(@RequestBody CreateSaleRequest salesRecord) {
-
-        Sales savedSales = salesService.createSale(salesRecord);
-
-        return ResponseEntity.ok(savedSales);
-    }
-
     @GetMapping("/allSales")
     public ResponseEntity<List<Sales>> getAllSales() {
         List<Sales> sales = salesService.getAllSales();
@@ -37,6 +29,14 @@ public class SalesController {
         Sales sales = salesService.getSaleById(id);
 
         return ResponseEntity.ok(sales);
+    }
+
+    @PostMapping("/create/sales_order")
+    public ResponseEntity<Sales> salesForm(@RequestBody CreateSaleRequest salesRecord) {
+
+        Sales savedSales = salesService.createSale(salesRecord);
+
+        return ResponseEntity.ok(savedSales);
     }
 
     @PutMapping("/update/{id}")

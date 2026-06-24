@@ -26,7 +26,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Explicitly add your FRONTEND's address here (NOT the backend port 8081)
         config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

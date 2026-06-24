@@ -6,6 +6,7 @@ import chemos.chem_os.model.Sales;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Component
 public class SalesMapper {
@@ -38,6 +39,7 @@ public class SalesMapper {
     }
     public void updateEntity(Sales sale, UpdateSaleRequest request) {
         sale.setSalesType(request.salesType());
+        sale.setUpdatedAt(LocalDateTime.now());
         sale.setCompanyTo(request.companyTo());
         sale.setCompanyFrom(request.companyFrom());
         sale.setProduct(request.product());
