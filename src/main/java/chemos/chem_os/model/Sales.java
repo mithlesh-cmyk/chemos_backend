@@ -23,7 +23,6 @@ public class Sales {
     @Column(name = "id")
     private String id;
 
-    @Column (name = "date")
     private LocalDate date;
 
     @Column(name = "updated_at")
