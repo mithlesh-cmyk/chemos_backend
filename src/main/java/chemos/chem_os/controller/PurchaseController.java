@@ -1,15 +1,19 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
+import chemos.chem_os.dto.PhysicalStockImportResult;
 import chemos.chem_os.dto.PurchaseComparisonRequest;
 import chemos.chem_os.dto.PurchaseComparisonResponse;
 import chemos.chem_os.dto.UpdatePurchaseRequest;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -57,5 +61,21 @@ public class PurchaseController {
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<Purchase> confirmPurchase(@PathVariable String id) {
         return ResponseEntity.ok(purchaseService.confirmPurchase(id));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
+    @GetMapping("/export-physical-stock")
+    public ResponseEntity<byte[]> exportPhysicalStock() {
+        byte[] csv = purchaseService.exportPhysicalStockCsv();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"physical_stock.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_EDIT')")
+    @PostMapping(value = "/import-physical-stock", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PhysicalStockImportResult> importPhysicalStock(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(purchaseService.importPhysicalStock(file));
     }
 }

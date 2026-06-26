@@ -2,19 +2,34 @@ package chemos.chem_os.services;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
 import chemos.chem_os.dto.FieldHighlight;
+import chemos.chem_os.dto.PhysicalStockImportResult;
 import chemos.chem_os.dto.PurchaseComparisonItem;
 import chemos.chem_os.dto.PurchaseComparisonResponse;
 import chemos.chem_os.dto.UpdatePurchaseRequest;
 import chemos.chem_os.mapper.PurchaseMapper;
 import chemos.chem_os.model.EntryStatus;
+import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
+import chemos.chem_os.repository.PhysicalStockRepository;
 import chemos.chem_os.repository.PurchaseRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -24,6 +39,7 @@ import java.util.stream.Stream;
 public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
+    private final PhysicalStockRepository physicalStockRepository;
     private final PurchaseMapper purchaseMapper;
     private final AuditLogService auditLogService;
 
@@ -113,6 +129,85 @@ public class PurchaseService {
         highlights.put("landedCostPerMt", highlight(items, PurchaseComparisonItem::landedCostPerMt));
 
         return new PurchaseComparisonResponse(items, highlights);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportPhysicalStockCsv() {
+        List<Purchase> purchases = purchaseRepository.findByStatus(EntryStatus.CONFIRMED);
+
+        CSVFormat format = CSVFormat.DEFAULT.builder()
+                .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
+                .build();
+
+        StringWriter sw = new StringWriter();
+        try (CSVPrinter printer = new CSVPrinter(sw, format)) {
+            for (Purchase p : purchases) {
+                printer.printRecord(
+                        p.getId(),
+                        p.getEta() != null ? p.getEta().toString() : "",
+                        p.getVesselName() != null ? p.getVesselName() : "",
+                        p.getProduct() != null ? p.getProduct() : "",
+                        p.getPort() != null ? p.getPort() : "",
+                        ""  // always blank — user fills this in
+                );
+            }
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate CSV");
+        }
+        return sw.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Transactional
+    public PhysicalStockImportResult importPhysicalStock(MultipartFile file) {
+        int updated = 0;
+        int skipped = 0;
+        List<String> errors = new ArrayList<>();
+
+        CSVFormat format = CSVFormat.DEFAULT.builder()
+                .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
+                .setSkipHeaderRecord(true)
+                .build();
+
+        try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             CSVParser parser = new CSVParser(reader, format)) {
+
+            for (CSVRecord record : parser) {
+                String purchaseId = record.get("PURCHASE_ID").trim();
+                String stockStr = record.get("PHYSICAL_STOCK").trim();
+
+                if (stockStr.isEmpty()) {
+                    skipped++;
+                    continue;
+                }
+
+                double stock;
+                try {
+                    stock = Double.parseDouble(stockStr);
+                } catch (NumberFormatException e) {
+                    errors.add("Row " + record.getRecordNumber() + ": invalid value '" + stockStr + "' for PURCHASE_ID=" + purchaseId);
+                    skipped++;
+                    continue;
+                }
+
+                if (!purchaseRepository.existsById(purchaseId)) {
+                    errors.add("Row " + record.getRecordNumber() + ": no purchase found for PURCHASE_ID=" + purchaseId);
+                    skipped++;
+                    continue;
+                }
+
+                // upsert — overwrite if already exists for this purchase
+                PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
+                        .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
+                entry.setPhysicalStock(stock);
+                entry.setUpdatedAt(LocalDateTime.now());
+                physicalStockRepository.save(entry);
+                updated++;
+            }
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to parse CSV: " + e.getMessage());
+        }
+
+        return new PhysicalStockImportResult(updated, skipped, errors);
     }
 
     private FieldHighlight highlight(List<PurchaseComparisonItem> items,

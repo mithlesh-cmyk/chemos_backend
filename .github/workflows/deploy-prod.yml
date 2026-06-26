@@ -31,26 +31,26 @@ jobs:
 
       - name: Write env file
         env:
-          PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
-          PROD_DB_USERNAME: ${{ secrets.PROD_DB_USERNAME }}
-          PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          PROD_JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
-          PROD_ADMIN_USERNAME: ${{ secrets.PROD_ADMIN_USERNAME }}
-          PROD_ADMIN_PASSWORD: ${{ secrets.PROD_ADMIN_PASSWORD }}
-          PROD_ADMIN_NAME: ${{ secrets.PROD_ADMIN_NAME }}
-          PROD_ADMIN_EMAIL: ${{ secrets.PROD_ADMIN_EMAIL }}
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
         run: |
           {
             printf 'SPRING_PROFILES_ACTIVE=prod\n'
             printf 'SERVER_PORT=8083\n'
-            printf 'DB_URL=%s\n' "$PROD_DB_URL"
-            printf 'DB_USERNAME=%s\n' "$PROD_DB_USERNAME"
-            printf 'DB_PASSWORD=%s\n' "$PROD_DB_PASSWORD"
-            printf 'JWT_SECRET=%s\n' "$PROD_JWT_SECRET"
-            printf 'APP_ADMIN_USERNAME=%s\n' "$PROD_ADMIN_USERNAME"
-            printf 'APP_ADMIN_PASSWORD=%s\n' "$PROD_ADMIN_PASSWORD"
-            printf 'APP_ADMIN_NAME=%s\n' "$PROD_ADMIN_NAME"
-            printf 'APP_ADMIN_EMAIL=%s\n' "$PROD_ADMIN_EMAIL"
+            printf 'DB_URL=%s\n' "$DB_URL"
+            printf 'DB_USERNAME=%s\n' "$DB_USERNAME"
+            printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
+            printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
+            printf 'APP_ADMIN_USERNAME=%s\n' "$ADMIN_USERNAME"
+            printf 'APP_ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
+            printf 'APP_ADMIN_NAME=%s\n' "$ADMIN_NAME"
+            printf 'APP_ADMIN_EMAIL=%s\n' "$ADMIN_EMAIL"
           } > /tmp/app-prod.env
 
       - name: Upload JAR and env to EC2
