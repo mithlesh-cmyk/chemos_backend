@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/sales")
