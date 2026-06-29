@@ -3,6 +3,7 @@ package chemos.chem_os.controller;
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
+import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +34,11 @@ public class SalesController {
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/allSales")
-    public ResponseEntity<Page<Sales>> getAllSales(@PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<Sales> sales = salesService.getAllSales(pageable);
-        return ResponseEntity.ok(sales);
+    public ResponseEntity<Page<Sales>> getAllSales(
+            @RequestParam(required = false) EntryStatus status,
+            @RequestParam(required = false) String product,
+            @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(salesService.getAllSales(status, product, pageable));
     }
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")

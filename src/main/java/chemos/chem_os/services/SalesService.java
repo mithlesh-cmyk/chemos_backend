@@ -10,6 +10,7 @@ import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,8 +33,16 @@ public class SalesService {
         return saved;
     }
 
-    public Page<Sales> getAllSales(Pageable pageable) {
-        return salesRepository.findAll(pageable);
+    public Page<Sales> getAllSales(EntryStatus status, String product, Pageable pageable) {
+        Specification<Sales> spec = (root, query, cb) -> cb.conjunction();
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (product != null && !product.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("product")), product.trim().toLowerCase()));
+        }
+        return salesRepository.findAll(spec, pageable);
     }
 
     public Sales getSaleById(String id) {
