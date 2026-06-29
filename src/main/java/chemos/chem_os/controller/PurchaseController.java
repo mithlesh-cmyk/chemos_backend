@@ -5,6 +5,7 @@ import chemos.chem_os.dto.PhysicalStockImportResult;
 import chemos.chem_os.dto.PurchaseComparisonRequest;
 import chemos.chem_os.dto.PurchaseComparisonResponse;
 import chemos.chem_os.dto.UpdatePurchaseRequest;
+import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +34,10 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
-    public ResponseEntity<List<Purchase>> getAllPurchase() {
-        List<Purchase> purchaseList = purchaseService.getAllPurchase();
-        return ResponseEntity.ok(purchaseList);
+    public ResponseEntity<List<Purchase>> getAllPurchase(
+            @RequestParam(required = false) EntryStatus status,
+            @RequestParam(required = false) String product) {
+        return ResponseEntity.ok(purchaseService.getAllPurchase(status, product));
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")

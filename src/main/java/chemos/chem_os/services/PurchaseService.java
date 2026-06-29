@@ -12,6 +12,7 @@ import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.PhysicalStockRepository;
 import chemos.chem_os.repository.PurchaseRepository;
+import org.springframework.data.jpa.domain.Specification;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -52,8 +53,16 @@ public class PurchaseService {
         return saved;
     }
 
-    public List<Purchase> getAllPurchase() {
-        return purchaseRepository.findAll();
+    public List<Purchase> getAllPurchase(EntryStatus status, String product) {
+        Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (product != null && !product.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("product")), product.trim().toLowerCase()));
+        }
+        return purchaseRepository.findAll(spec);
     }
 
     public Purchase getPurchaseById(String id) {
