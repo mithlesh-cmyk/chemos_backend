@@ -18,6 +18,8 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -163,6 +165,9 @@ public class PurchaseService {
         int skipped = 0;
         List<String> errors = new ArrayList<>();
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = (auth != null && auth.isAuthenticated()) ? auth.getName() : "system";
+
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
                 .setSkipHeaderRecord(true)
@@ -200,6 +205,7 @@ public class PurchaseService {
                         .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
                 entry.setPhysicalStock(stock);
                 entry.setUpdatedAt(LocalDateTime.now());
+                entry.setUpdatedBy(currentUser);
                 physicalStockRepository.save(entry);
                 updated++;
             }
@@ -207,7 +213,9 @@ public class PurchaseService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to parse CSV: " + e.getMessage());
         }
 
-        return new PhysicalStockImportResult(updated, skipped, errors);
+        PhysicalStockImportResult result = new PhysicalStockImportResult(updated, skipped, errors);
+        auditLogService.log("IMPORT", "PHYSICAL_STOCK", null, null, result);
+        return result;
     }
 
     private FieldHighlight highlight(List<PurchaseComparisonItem> items,
