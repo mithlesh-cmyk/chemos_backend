@@ -1,6 +1,7 @@
 package chemos.chem_os.services;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.EntryStatus;
@@ -12,6 +13,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -59,5 +63,20 @@ public class SalesService {
         Sales saved = salesRepository.save(before);
         auditLogService.log("CONFIRM", "SALE", saved.getId(), snapshot, saved);
         return saved;
+    }
+
+    public Page<Sales> getFilteredSales(SalesFilterRequest filters, Pageable pageable) {
+
+        LocalDate effectiveStart = filters.startDate() != null ? filters.startDate() : LocalDate.of(1900, 1, 1);
+        LocalDate effectiveEnd = filters.endDate() != null ? filters.endDate() : LocalDate.of(2999, 12, 31);
+
+        return salesRepository.findWithFilters(
+                filters.product(),
+                filters.companyTo(),
+                filters.port(),
+                effectiveStart,
+                effectiveEnd,
+                pageable
+        );
     }
 }
