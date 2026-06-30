@@ -1,5 +1,6 @@
 package chemos.chem_os.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,9 +8,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -72,6 +76,7 @@ public class Purchase {
     @Column(name = "market_status")
     private String marketStatus;
 
+    @JsonIgnore
     @Column(name = "cost_price", precision = 19, scale = 4)
     private BigDecimal costPrice;
 
@@ -117,4 +122,12 @@ public class Purchase {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EntryStatus status = EntryStatus.UNCONFIRMED;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

@@ -114,7 +114,7 @@ public class PurchaseService {
                     Integer transitDays = null;
                     if (p.getPort() != null && p.getDischargePort() != null) {
                         transitDays = portTransitDaysRepository
-                                .findByFromPortIdAndToPortId(p.getPort().getId(), p.getDischargePort().getId())
+                                .findFirstByFromPortIdAndToPortId(p.getPort().getId(), p.getDischargePort().getId())
                                 .map(td -> td.getDays())
                                 .orElse(null);
                     }

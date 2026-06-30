@@ -32,7 +32,7 @@ public class PortTransitDaysService {
     }
 
     public Optional<PortTransitDaysResponse> findByPorts(String fromPortId, String toPortId) {
-        return portTransitDaysRepository.findByFromPortIdAndToPortId(fromPortId, toPortId)
+        return portTransitDaysRepository.findFirstByFromPortIdAndToPortId(fromPortId, toPortId)
                 .map(this::toResponse);
     }
 

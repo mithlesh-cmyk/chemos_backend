@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface PortTransitDaysRepository extends JpaRepository<PortTransitDays, String> {
 
-    Optional<PortTransitDays> findByFromPortIdAndToPortId(String fromPortId, String toPortId);
+    Optional<PortTransitDays> findFirstByFromPortIdAndToPortId(String fromPortId, String toPortId);
 
     List<PortTransitDays> findByFromPortId(String fromPortId);
 
