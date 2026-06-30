@@ -10,6 +10,7 @@ public record SalePurchaseLinkResponse(
         String id,
         String saleId,
         String purchaseId,
+        String createdByUsername,
         Double linkedQuantity,
 
         // Purchase context

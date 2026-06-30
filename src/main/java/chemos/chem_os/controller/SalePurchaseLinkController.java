@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/links")
@@ -48,6 +50,24 @@ public class SalePurchaseLinkController {
     public ResponseEntity<Void> deleteLink(@PathVariable String id) {
         linkService.deleteLink(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Get all links created by the currently authenticated user.
+     */
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/me")
+    public ResponseEntity<List<SalePurchaseLinkResponse>> getMyLinks() {
+        return ResponseEntity.ok(linkService.getLinksByUser(null));
+    }
+
+    /**
+     * Get all links created by a specific user.
+     */
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<SalePurchaseLinkResponse>> getLinksByUser(@PathVariable String username) {
+        return ResponseEntity.ok(linkService.getLinksByUser(username));
     }
 
     /**

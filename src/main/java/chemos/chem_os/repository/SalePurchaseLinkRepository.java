@@ -13,6 +13,8 @@ public interface SalePurchaseLinkRepository extends JpaRepository<SalePurchaseLi
 
     List<SalePurchaseLink> findByPurchaseId(String purchaseId);
 
+    List<SalePurchaseLink> findByCreatedByUsernameOrderByCreatedAtDesc(String createdByUsername);
+
     boolean existsBySaleIdAndPurchaseId(String saleId, String purchaseId);
 
     /**

@@ -13,6 +13,8 @@ import chemos.chem_os.repository.SalePurchaseLinkRepository;
 import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,6 +56,7 @@ public class SalePurchaseLinkService {
         SalePurchaseLink link = SalePurchaseLink.builder()
                 .saleId(request.saleId())
                 .purchaseId(request.purchaseId())
+                .createdByUsername(resolveCurrentUsername())
                 .linkedQuantity(request.linkedQuantity())
                 .build();
 
@@ -99,6 +102,24 @@ public class SalePurchaseLinkService {
                         "Link not found with id: " + id));
         linkRepository.delete(link);
         auditLogService.log("DELETE", "SALE_PURCHASE_LINK", id, link, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SalePurchaseLinkResponse> getLinksByUser(String username) {
+        String resolvedUsername = (username == null || username.isBlank())
+                ? resolveCurrentUsername()
+                : username.trim();
+
+        List<SalePurchaseLink> links = linkRepository.findByCreatedByUsernameOrderByCreatedAtDesc(resolvedUsername);
+        return links.stream().map(link -> {
+            Purchase purchase = purchaseRepository.findById(link.getPurchaseId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Purchase not found with id: " + link.getPurchaseId()));
+            Sales sale = salesRepository.findById(link.getSaleId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Sale not found with id: " + link.getSaleId()));
+            return buildResponse(link, purchase, sale);
+        }).toList();
     }
 
     @Transactional(readOnly = true)
@@ -199,6 +220,17 @@ public class SalePurchaseLinkService {
         }
     }
 
+    private String resolveCurrentUsername() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() != null) {
+            String name = auth.getName();
+            if (name != null && !name.isBlank() && !"anonymousUser".equals(name)) {
+                return name;
+            }
+        }
+        return "system";
+    }
+
     /**
      * Builds a {@link SalePurchaseLinkResponse} with up-to-date derived quantities
      * computed after the link has been persisted.
@@ -213,6 +245,7 @@ public class SalePurchaseLinkService {
                 link.getId(),
                 link.getSaleId(),
                 link.getPurchaseId(),
+                link.getCreatedByUsername(),
                 link.getLinkedQuantity(),
                 purchase.getQuantity(),
                 purchaseAvailable,

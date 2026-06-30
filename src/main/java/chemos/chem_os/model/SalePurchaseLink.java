@@ -35,6 +35,9 @@ public class SalePurchaseLink {
     @Column(name = "purchase_id", nullable = false)
     private String purchaseId;
 
+    @Column(name = "created_by_username", nullable = false)
+    private String createdByUsername;
+
     /**
      * The quantity (in MT) allocated from this purchase to fulfil this sale.
      * This is the actual amount committed — not the full PO or sale quantity.
