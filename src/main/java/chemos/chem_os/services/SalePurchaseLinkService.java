@@ -50,6 +50,15 @@ public class SalePurchaseLinkService {
                     "A link already exists between this sale and purchase. Use PUT to update it.");
         }
 
+        if (sale.getQuantity() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Sale " + request.saleId() + " has no quantity set.");
+        }
+        if (purchase.getQuantity() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Purchase " + request.purchaseId() + " has no quantity set.");
+        }
+
         validateQuantities(request.saleId(), request.purchaseId(), request.linkedQuantity(),
                 sale.getQuantity(), purchase.getQuantity(), null);
 
@@ -83,6 +92,15 @@ public class SalePurchaseLinkService {
         Purchase purchase = purchaseRepository.findById(link.getPurchaseId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + link.getPurchaseId()));
+
+        if (sale.getQuantity() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Sale " + link.getSaleId() + " has no quantity set.");
+        }
+        if (purchase.getQuantity() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Purchase " + link.getPurchaseId() + " has no quantity set.");
+        }
 
         // Pass the current link so its existing quantity is excluded from the validation sums
         validateQuantities(link.getSaleId(), link.getPurchaseId(), request.linkedQuantity(),
