@@ -43,4 +43,6 @@ public interface PortRepository extends JpaRepository<Ports, String> {
     Page<Ports> searchPorts(@Param("query") String query, @Param("isIndian") Boolean isIndian, Pageable pageable);
 
     boolean existsBySearchKey(String searchKey);
+
+    java.util.Optional<Ports> findByDisplayNameIgnoreCase(String displayName);
 }

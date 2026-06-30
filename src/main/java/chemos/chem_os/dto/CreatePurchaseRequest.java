@@ -25,6 +25,8 @@ public record CreatePurchaseRequest(
 
         Double quantity,
 
+        String currency,
+
         @JsonProperty("offer_usd")
         BigDecimal offerUsd,
 

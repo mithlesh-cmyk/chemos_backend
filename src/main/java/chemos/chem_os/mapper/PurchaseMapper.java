@@ -27,6 +27,7 @@ public class PurchaseMapper {
                 .shipment(request.shipment())
                 .quantity(request.quantity())
                 .priceFc(request.priceFc())
+                .currency(request.currency())
                 .offerUsd(request.offerUsd())
                 .exchangeRate(request.exchangeRate())
                 .priceInr(request.priceInr())
@@ -88,10 +89,11 @@ public class PurchaseMapper {
         purchase.setEta(request.eta());
     }
 
-    private Ports resolvePort(String portId) {
-        if (portId == null || portId.isBlank()) return null;
-        return portRepository.findById(portId)
+    private Ports resolvePort(String portIdentifier) {
+        if (portIdentifier == null || portIdentifier.isBlank()) return null;
+        return portRepository.findById(portIdentifier)
+                .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Port not found: " + portId));
+                        HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier));
     }
 }
