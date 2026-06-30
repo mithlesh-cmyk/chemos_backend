@@ -11,6 +11,7 @@ import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.PhysicalStockRepository;
+import chemos.chem_os.repository.PortTransitDaysRepository;
 import chemos.chem_os.repository.PurchaseRepository;
 import org.springframework.data.jpa.domain.Specification;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class PurchaseService {
     private final PhysicalStockRepository physicalStockRepository;
     private final PurchaseMapper purchaseMapper;
     private final AuditLogService auditLogService;
+    private final PortTransitDaysRepository portTransitDaysRepository;
 
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest) {
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
@@ -108,6 +110,15 @@ public class PurchaseService {
                                     p.getSws(), p.getAdd(), p.getOtherExpense())
                             .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    Integer transitDays = null;
+                    if (p.getPort() != null && p.getDischargePort() != null) {
+                        transitDays = portTransitDaysRepository
+                                .findByFromPortIdAndToPortId(p.getPort().getId(), p.getDischargePort().getId())
+                                .map(td -> td.getDays())
+                                .orElse(null);
+                    }
+
                     return new PurchaseComparisonItem(
                             p.getId(),
                             p.getCompanyFrom(),
@@ -123,7 +134,8 @@ public class PurchaseService {
                             p.getSws(),
                             p.getAdd(),
                             p.getOtherExpense(),
-                            landedCost
+                            landedCost,
+                            transitDays
                     );
                 })
                 .toList();
@@ -158,7 +170,7 @@ public class PurchaseService {
                         p.getEta() != null ? p.getEta().toString() : "",
                         p.getVesselName() != null ? p.getVesselName() : "",
                         p.getProduct() != null ? p.getProduct() : "",
-                        p.getPort() != null ? p.getPort() : "",
+                        p.getPort() != null ? p.getPort().getDisplayName() : "",
                         ""  // always blank — user fills this in
                 );
             }

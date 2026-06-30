@@ -22,9 +22,10 @@ public class PortController {
     @GetMapping("/suggestions")
     public ResponseEntity<Page<PortSuggestionResposne>> getSuggestionPorts(
             @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "is_indian", required = false) Boolean isIndian,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        Page<PortSuggestionResposne> responsePage = portService.searchPorts(query, pageable);
+        Page<PortSuggestionResposne> responsePage = portService.searchPorts(query, isIndian, pageable);
         return ResponseEntity.ok(responsePage);
     }
 

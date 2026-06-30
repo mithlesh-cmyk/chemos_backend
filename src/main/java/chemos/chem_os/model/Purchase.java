@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -60,7 +62,9 @@ public class Purchase {
     @Column(name = "payment_days")
     private Integer paymentDays;
 
-    private String port;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "port")
+    private Ports port;
 
     @Column(name = "market_price", precision = 19, scale = 4)
     private BigDecimal marketPrice;
@@ -95,8 +99,9 @@ public class Purchase {
     @Column(name = "other_expense", precision = 19, scale = 4)
     private BigDecimal otherExpense;
 
-    @Column(name = "discharge_ports")
-    private String dischargePorts;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "discharge_ports")
+    private Ports dischargePort;
 
     @Column(name = "price_type")
     private String priceType;
