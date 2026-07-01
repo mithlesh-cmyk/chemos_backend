@@ -98,12 +98,24 @@ GET /api/v1/stock-stats/by-product
     "incomingUnsoldNew": 0.0,
     "incomingSold": 0.0,
     "incomingUnsoldClosing": 0.0,
-    "totalStock": 150.0
+    "totalStock": 150.0,
+    "vesselInventory": [
+      {
+        "vesselName": "SEA FALCON",
+        "eta": "2026-06-20",
+        "inventoryDays": 11
+      }
+    ]
   }
 ]
 ```
 
 `product`/`port` are uppercased and trimmed (grouping is normalized internally), so display them as-is or re-case on the frontend if a specific casing is wanted.
+
+`vesselInventory` — one entry per physical-stock record (i.e. per vessel/purchase) contributing to this product+port, sourced from the `physical_stocks` table joined to its purchase:
+- `vesselName` — the purchase's vessel name.
+- `eta` — the date the physical stock record was last updated (`physical_stocks.updated_at`), used as the stock's "arrival" date.
+- `inventoryDays` — `today − eta` in days (business day, `Asia/Kolkata`). Sorted ascending by `eta`. Empty array if no physical stock is recorded for that product+port.
 
 ---
 

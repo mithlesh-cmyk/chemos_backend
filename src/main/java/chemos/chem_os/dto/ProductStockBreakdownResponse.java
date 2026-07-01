@@ -1,5 +1,7 @@
 package chemos.chem_os.dto;
 
+import java.util.List;
+
 public record ProductStockBreakdownResponse(
         String product,
         String port,
@@ -10,6 +12,7 @@ public record ProductStockBreakdownResponse(
         Double incomingUnsoldNew,
         Double incomingSold,
         Double incomingUnsoldClosing,
-        Double totalStock
+        Double totalStock,
+        List<VesselInventoryDetail> vesselInventory
 ) {
 }

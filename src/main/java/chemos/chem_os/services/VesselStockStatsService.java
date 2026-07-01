@@ -1,6 +1,8 @@
 package chemos.chem_os.services;
 
 import chemos.chem_os.dto.ProductStockBreakdownResponse;
+import chemos.chem_os.dto.VesselInventoryDetail;
+import chemos.chem_os.dto.VesselInventoryRow;
 import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
@@ -18,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -101,11 +105,20 @@ public class VesselStockStatsService {
 
     @Transactional(readOnly = true)
     public List<ProductStockBreakdownResponse> getProductBreakdown() {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+
         Map<ProductPortKey, List<VesselStockStatsResponse>> byProductPort = computeGroupStats().stream()
                 .collect(Collectors.groupingBy(
                         r -> new ProductPortKey(r.product(), r.port()),
                         LinkedHashMap::new,
                         Collectors.toList()));
+
+        Map<ProductPortKey, List<VesselInventoryDetail>> vesselInventoryByProductPort = physicalStockRepository
+                .findVesselInventoryRows().stream()
+                .collect(Collectors.groupingBy(
+                        r -> new ProductPortKey(r.product(), r.port()),
+                        LinkedHashMap::new,
+                        Collectors.collectingAndThen(Collectors.toList(), rows -> toVesselInventoryDetails(rows, today))));
 
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
         for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
@@ -119,10 +132,21 @@ public class VesselStockStatsService {
                     sumField(rows, VesselStockStatsResponse::incomingUnsoldNew),
                     sumField(rows, VesselStockStatsResponse::incomingSold),
                     sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing),
-                    sumField(rows, VesselStockStatsResponse::totalStock)
+                    sumField(rows, VesselStockStatsResponse::totalStock),
+                    vesselInventoryByProductPort.getOrDefault(entry.getKey(), List.of())
             ));
         }
         return results;
+    }
+
+    private List<VesselInventoryDetail> toVesselInventoryDetails(List<VesselInventoryRow> rows, LocalDate today) {
+        return rows.stream()
+                .map(r -> {
+                    LocalDate eta = r.date().toLocalDate();
+                    return new VesselInventoryDetail(r.vesselName(), eta, ChronoUnit.DAYS.between(eta, today));
+                })
+                .sorted(Comparator.comparing(VesselInventoryDetail::eta))
+                .toList();
     }
 
     private double sumField(List<VesselStockStatsResponse> rows, java.util.function.ToDoubleFunction<VesselStockStatsResponse> extractor) {
