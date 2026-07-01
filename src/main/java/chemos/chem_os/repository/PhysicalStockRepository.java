@@ -25,7 +25,7 @@ public interface PhysicalStockRepository extends JpaRepository<PhysicalStock, St
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselInventoryRow(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.port.displayName)), ps.updatedAt)
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.port.displayName)), ps.updatedAt, p.companyTo)
         FROM PhysicalStock ps
         JOIN Purchase p ON p.id = ps.purchaseId
         WHERE p.status = chemos.chem_os.model.EntryStatus.CONFIRMED

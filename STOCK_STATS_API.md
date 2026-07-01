@@ -103,7 +103,8 @@ GET /api/v1/stock-stats/by-product
       {
         "vesselName": "SEA FALCON",
         "eta": "2026-06-20",
-        "inventoryDays": 11
+        "inventoryDays": 11,
+        "company": "Our Company Ltd"
       }
     ]
   }
@@ -116,6 +117,7 @@ GET /api/v1/stock-stats/by-product
 - `vesselName` — the purchase's vessel name.
 - `eta` — the date the physical stock record was last updated (`physical_stocks.updated_at`), used as the stock's "arrival" date.
 - `inventoryDays` — `today − eta` in days (business day, `Asia/Kolkata`). Sorted ascending by `eta`. Empty array if no physical stock is recorded for that product+port.
+- `company` — the purchase's `company_to` (the buying/receiving company that owns this stock lot).
 
 ---
 

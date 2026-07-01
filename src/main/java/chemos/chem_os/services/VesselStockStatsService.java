@@ -143,7 +143,7 @@ public class VesselStockStatsService {
         return rows.stream()
                 .map(r -> {
                     LocalDate eta = r.date().toLocalDate();
-                    return new VesselInventoryDetail(r.vesselName(), eta, ChronoUnit.DAYS.between(eta, today));
+                    return new VesselInventoryDetail(r.vesselName(), eta, ChronoUnit.DAYS.between(eta, today), r.company());
                 })
                 .sorted(Comparator.comparing(VesselInventoryDetail::eta))
                 .toList();

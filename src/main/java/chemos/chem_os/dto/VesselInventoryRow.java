@@ -6,6 +6,7 @@ public record VesselInventoryRow(
         String vesselName,
         String product,
         String port,
-        LocalDateTime date
+        LocalDateTime date,
+        String company
 ) {
 }
