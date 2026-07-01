@@ -36,7 +36,6 @@ public class PurchaseMapper {
                 .port(resolvePort(request.port()))
                 .marketPrice(request.marketPrice())
                 .marketStatus(request.marketStatus())
-                .costPrice(request.costPrice())
                 .replacementCost(request.replacementCost())
                 .make(request.make())
                 .packaging(request.packaging())
@@ -72,7 +71,6 @@ public class PurchaseMapper {
         purchase.setPort(resolvePort(request.port()));
         purchase.setMarketPrice(request.marketPrice());
         purchase.setMarketStatus(request.marketStatus());
-        purchase.setCostPrice(request.costPrice());
         purchase.setReplacementCost(request.replacementCost());
         purchase.setMake(request.make());
         purchase.setPackaging(request.packaging());

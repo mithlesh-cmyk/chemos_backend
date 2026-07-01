@@ -1,6 +1,5 @@
 package chemos.chem_os.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -75,10 +74,6 @@ public class Purchase {
 
     @Column(name = "market_status")
     private String marketStatus;
-
-    @JsonIgnore
-    @Column(name = "cost_price", precision = 19, scale = 4)
-    private BigDecimal costPrice;
 
     @Column(name = "replacement_cost", precision = 19, scale = 4)
     private BigDecimal replacementCost;

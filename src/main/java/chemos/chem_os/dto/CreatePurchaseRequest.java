@@ -50,9 +50,6 @@ public record CreatePurchaseRequest(
         @JsonProperty("market_price")
         BigDecimal marketPrice,
 
-        @JsonProperty("cost_price")
-        BigDecimal costPrice,
-
         @JsonProperty("replacement_cost")
         BigDecimal replacementCost,
 
