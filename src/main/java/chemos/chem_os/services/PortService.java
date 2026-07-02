@@ -23,13 +23,13 @@ public class PortService {
 
 
     @Transactional(readOnly = true)
-    public Page<PortSuggestionResposne> searchPorts(String query, Pageable pageable) {
+    public Page<PortSuggestionResposne> searchPorts(String query, Boolean isIndian, Pageable pageable) {
 
         String cleanQuery = (query == null || query.trim().isEmpty())
                 ? ""
                 : query.trim().replaceAll("\\s+", " ");
 
-        return portRepository.searchPorts(cleanQuery, pageable)
+        return portRepository.searchPorts(cleanQuery, isIndian, pageable)
                 .map(portMapper::toSuggestionResponse);
     }
 
@@ -45,6 +45,7 @@ public class PortService {
                 .displayName(sanitizedName)
                 .searchKey(searchKey)
                 .locode(null)
+                .isIndian(createPortRequest.isIndian() != null ? createPortRequest.isIndian() : true)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();

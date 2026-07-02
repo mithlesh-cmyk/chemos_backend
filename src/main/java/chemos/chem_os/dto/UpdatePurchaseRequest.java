@@ -21,7 +21,6 @@ public record UpdatePurchaseRequest(
         String port,
         BigDecimal marketPrice,
         String marketStatus,
-        BigDecimal costPrice,
         BigDecimal replacementCost,
         String make,
         String packaging,

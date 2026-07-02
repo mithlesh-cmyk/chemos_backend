@@ -28,4 +28,10 @@ public class PhysicalStock {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @Column(name = "previous_stock")
+    private Double previousStock;
 }

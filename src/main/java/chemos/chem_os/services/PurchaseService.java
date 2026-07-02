@@ -1,23 +1,22 @@
 package chemos.chem_os.services;
 
-import chemos.chem_os.dto.CreatePurchaseRequest;
-import chemos.chem_os.dto.FieldHighlight;
-import chemos.chem_os.dto.PhysicalStockImportResult;
-import chemos.chem_os.dto.PurchaseComparisonItem;
-import chemos.chem_os.dto.PurchaseComparisonResponse;
-import chemos.chem_os.dto.UpdatePurchaseRequest;
+import chemos.chem_os.dto.*;
 import chemos.chem_os.mapper.PurchaseMapper;
 import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.PhysicalStockRepository;
+import chemos.chem_os.repository.PortTransitDaysRepository;
 import chemos.chem_os.repository.PurchaseRepository;
+import org.springframework.data.jpa.domain.Specification;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,12 +35,14 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-public class PurchaseService {
+public class
+PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
     private final PhysicalStockRepository physicalStockRepository;
     private final PurchaseMapper purchaseMapper;
     private final AuditLogService auditLogService;
+    private final PortTransitDaysRepository portTransitDaysRepository;
 
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest) {
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
@@ -50,8 +51,16 @@ public class PurchaseService {
         return saved;
     }
 
-    public List<Purchase> getAllPurchase() {
-        return purchaseRepository.findAll();
+    public List<Purchase> getAllPurchase(EntryStatus status, String product) {
+        Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (product != null && !product.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("product")), product.trim().toLowerCase()));
+        }
+        return purchaseRepository.findAll(spec);
     }
 
     public Purchase getPurchaseById(String id) {
@@ -97,6 +106,15 @@ public class PurchaseService {
                                     p.getSws(), p.getAdd(), p.getOtherExpense())
                             .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    Integer transitDays = null;
+                    if (p.getPort() != null && p.getDischargePort() != null) {
+                        transitDays = portTransitDaysRepository
+                                .findFirstByFromPortIdAndToPortId(p.getPort().getId(), p.getDischargePort().getId())
+                                .map(td -> td.getDays())
+                                .orElse(null);
+                    }
+
                     return new PurchaseComparisonItem(
                             p.getId(),
                             p.getCompanyFrom(),
@@ -112,7 +130,8 @@ public class PurchaseService {
                             p.getSws(),
                             p.getAdd(),
                             p.getOtherExpense(),
-                            landedCost
+                            landedCost,
+                            transitDays
                     );
                 })
                 .toList();
@@ -147,7 +166,7 @@ public class PurchaseService {
                         p.getEta() != null ? p.getEta().toString() : "",
                         p.getVesselName() != null ? p.getVesselName() : "",
                         p.getProduct() != null ? p.getProduct() : "",
-                        p.getPort() != null ? p.getPort() : "",
+                        p.getPort() != null ? p.getPort().getDisplayName() : "",
                         ""  // always blank — user fills this in
                 );
             }
@@ -162,6 +181,11 @@ public class PurchaseService {
         int updated = 0;
         int skipped = 0;
         List<String> errors = new ArrayList<>();
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = (auth != null && auth.isAuthenticated()) ? auth.getName() : "system";
+
+        LocalDateTime sessionTimestamp = LocalDateTime.now();
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
@@ -196,18 +220,41 @@ public class PurchaseService {
                 }
 
                 // upsert — overwrite if already exists for this purchase
+//                PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
+//                        .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
+//                entry.setPhysicalStock(stock);
+//                entry.setUpdatedAt(sessionTimestamp);
+//                entry.setUpdatedBy(currentUser);
+//                physicalStockRepository.save(entry);
+//                updated++;
+                //Changed the upsert behav. for storing old values
                 PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
                         .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
+
+                double oldValue = entry.getPhysicalStock() != null ? entry.getPhysicalStock() : -1;
+
+                if (oldValue == stock) {
+                    // value didn't actually change — count as skipped
+                    skipped++;
+                    continue;
+                }
+
+// value changed — store previous, update current
+                entry.setPreviousStock(oldValue != -1 ? oldValue : null);
                 entry.setPhysicalStock(stock);
-                entry.setUpdatedAt(LocalDateTime.now());
+                entry.setUpdatedAt(sessionTimestamp);
+                entry.setUpdatedBy(currentUser);
                 physicalStockRepository.save(entry);
                 updated++;
+
             }
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to parse CSV: " + e.getMessage());
         }
 
-        return new PhysicalStockImportResult(updated, skipped, errors);
+        PhysicalStockImportResult result = new PhysicalStockImportResult(updated, skipped, errors);
+        auditLogService.log("IMPORT", "PHYSICAL_STOCK", null, null, result);
+        return result;
     }
 
     private FieldHighlight highlight(List<PurchaseComparisonItem> items,
@@ -223,5 +270,17 @@ public class PurchaseService {
                 .map(PurchaseComparisonItem::id)
                 .orElse(null);
         return new FieldHighlight(bestId, worstId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhysicalStockSessionSummary> getStockUpdateSessions(String user) {
+        return (user == null || user.isBlank())
+                ? physicalStockRepository.findSessionSummaries()
+                : physicalStockRepository.findSessionSummariesByUser(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhysicalStock> getStockUpdateSessionDetail(String user, LocalDateTime timestamp) {
+        return physicalStockRepository.findByUpdatedByAndUpdatedAt(user, timestamp);
     }
 }

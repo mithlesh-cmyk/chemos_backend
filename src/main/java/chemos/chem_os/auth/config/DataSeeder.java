@@ -56,7 +56,8 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"prod_create", "PRODUCT_CREATE",   "Create Products",   "PRODUCTS"},
             new Object[]{"prod_edit",   "PRODUCT_EDIT",     "Edit Products",     "PRODUCTS"},
             new Object[]{"usr_mgmt",    "USER_MANAGEMENT",  "User Management",   "ADMIN"},
-            new Object[]{"role_mgmt",   "ROLE_MANAGEMENT",  "Role Management",   "ADMIN"}
+            new Object[]{"role_mgmt",   "ROLE_MANAGEMENT",  "Role Management",   "ADMIN"},
+            new Object[]{"stock_stats_view", "STOCK_STATS_VIEW", "View Vessel Stock Stats", "STOCK"}
     );
 
     @Override

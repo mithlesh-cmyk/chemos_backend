@@ -1,7 +1,9 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
+import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -29,9 +34,11 @@ public class SalesController {
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/allSales")
-    public ResponseEntity<Page<Sales>> getAllSales(@PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<Sales> sales = salesService.getAllSales(pageable);
-        return ResponseEntity.ok(sales);
+    public ResponseEntity<Page<Sales>> getAllSales(
+            @RequestParam(required = false) EntryStatus status,
+            @RequestParam(required = false) String product,
+            @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(salesService.getAllSales(status, product, pageable));
     }
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
@@ -51,5 +58,19 @@ public class SalesController {
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<Sales> confirmSale(@PathVariable String id) {
         return ResponseEntity.ok(salesService.confirmSale(id));
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<Page<Sales>> getFilteredSales(
+            @RequestParam(required = false) String product,
+            @RequestParam(required = false) String companyTo,
+            @RequestParam(required = false) String port,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            Pageable pageable
+    ) {
+        SalesFilterRequest filters = new SalesFilterRequest(product, companyTo, port, startDate, endDate);
+        Page<Sales> result = salesService.getFilteredSales(filters, pageable);
+        return ResponseEntity.ok(result);
     }
 }

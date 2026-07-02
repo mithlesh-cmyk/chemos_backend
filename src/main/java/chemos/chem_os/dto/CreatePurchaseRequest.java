@@ -25,6 +25,8 @@ public record CreatePurchaseRequest(
 
         Double quantity,
 
+        String currency,
+
         @JsonProperty("offer_usd")
         BigDecimal offerUsd,
 
@@ -47,9 +49,6 @@ public record CreatePurchaseRequest(
 
         @JsonProperty("market_price")
         BigDecimal marketPrice,
-
-        @JsonProperty("cost_price")
-        BigDecimal costPrice,
 
         @JsonProperty("replacement_cost")
         BigDecimal replacementCost,

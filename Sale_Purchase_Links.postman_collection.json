@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "Sale-Purchase Links API",
+    "description": "API endpoints for managing sale-purchase links in ChemOS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "sale_id",
+      "value": "SALE-UUID",
+      "type": "string"
+    },
+    {
+      "key": "purchase_id",
+      "value": "PURCHASE-UUID",
+      "type": "string"
+    },
+    {
+      "key": "link_id",
+      "value": "LINK-UUID",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Link",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"saleId\": \"{{sale_id}}\",\n  \"purchaseId\": \"{{purchase_id}}\",\n  \"linkedQuantity\": 50.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/links",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "links"]
+        },
+        "description": "Create a new link between a sale and a purchase. Validates that:\n- Both sale and purchase exist\n- linkedQuantity is positive\n- linkedQuantity does not exceed purchase available quantity\n- linkedQuantity does not exceed sale remaining requirement\n- No duplicate link exists (same saleId + purchaseId)"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Update Link",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"linkedQuantity\": 75.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/links/{{link_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "links", "{{link_id}}"]
+        },
+        "description": "Update the committed quantity for an existing link. The link's current quantity is excluded from validation sums, so you can freely adjust up or down within bounds."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Delete Link",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/links/{{link_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "links", "{{link_id}}"]
+        },
+        "description": "Remove a link between a sale and purchase. The committed quantity is released back to both the PO and the sale."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Get Sale Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/links/sale/{{sale_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "links", "sale", "{{sale_id}}"]
+        },
+        "description": "Get complete summary for a sale:\n- Total quantity required\n- Total quantity already linked from POs\n- Remaining quantity still needed\n- List of all PO links with their quantities and availability"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Purchase Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/links/purchase/{{purchase_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "links", "purchase", "{{purchase_id}}"]
+        },
+        "description": "Get complete summary for a purchase:\n- Original PO quantity (fixed/never changes)\n- Total quantity committed to sales\n- Available quantity for new sales\n- List of all sale links showing how the PO is distributed"
+      },
+      "response": []
+    },
+    {
+      "name": "Example: Get All Sales",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/sales/allSales?status=CONFIRMED&page=0&size=20",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "sales", "allSales"],
+          "query": [
+            {
+              "key": "status",
+              "value": "CONFIRMED"
+            },
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Helper endpoint: Get all sales to find saleId for testing"
+      },
+      "response": []
+    },
+    {
+      "name": "Example: Get All Purchases",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/purchase/allPurchase?status=CONFIRMED",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "purchase", "allPurchase"],
+          "query": [
+            {
+              "key": "status",
+              "value": "CONFIRMED"
+            }
+          ]
+        },
+        "description": "Helper endpoint: Get all purchases to find purchaseId for testing"
+      },
+      "response": []
+    },
+    {
+      "name": "Example: Get Specific Sale",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/sales/{{sale_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "sales", "{{sale_id}}"]
+        },
+        "description": "Helper endpoint: Get details of a specific sale"
+      },
+      "response": []
+    },
+    {
+      "name": "Example: Get Specific Purchase",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/purchase/{{purchase_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "purchase", "{{purchase_id}}"]
+        },
+        "description": "Helper endpoint: Get details of a specific purchase"
+      },
+      "response": []
+    }
+  ]
+}

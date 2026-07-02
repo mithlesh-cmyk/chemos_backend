@@ -9,3 +9,10 @@ public record PurchaseComparisonRequest(
         List<String> purchaseIds
 ) {
 }
+
+
+
+
+
+
+

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public record CreatePortRequest(
         @NotBlank(message = "Port name cannot be blank")
-        String portName
+        String portName,
+        Boolean isIndian
 ) {
 }
