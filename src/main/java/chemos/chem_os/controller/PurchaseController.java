@@ -1,11 +1,8 @@
 package chemos.chem_os.controller;
 
-import chemos.chem_os.dto.CreatePurchaseRequest;
-import chemos.chem_os.dto.PhysicalStockImportResult;
-import chemos.chem_os.dto.PurchaseComparisonRequest;
-import chemos.chem_os.dto.PurchaseComparisonResponse;
-import chemos.chem_os.dto.UpdatePurchaseRequest;
+import chemos.chem_os.dto.*;
 import chemos.chem_os.model.EntryStatus;
+import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -79,5 +77,20 @@ public class PurchaseController {
     @PostMapping(value = "/import-physical-stock", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PhysicalStockImportResult> importPhysicalStock(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(purchaseService.importPhysicalStock(file));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
+    @GetMapping("/physical-stock/sessions")
+    public ResponseEntity<List<PhysicalStockSessionSummary>> getStockUpdateSessions(
+            @RequestParam(required = false) String user) {
+        return ResponseEntity.ok(purchaseService.getStockUpdateSessions(user));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
+    @GetMapping("/physical-stock/sessions/detail")
+    public ResponseEntity<List<PhysicalStock>> getStockUpdateSessionDetail(
+            @RequestParam String user,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) LocalDateTime timestamp) {
+        return ResponseEntity.ok(purchaseService.getStockUpdateSessionDetail(user, timestamp));
     }
 }
