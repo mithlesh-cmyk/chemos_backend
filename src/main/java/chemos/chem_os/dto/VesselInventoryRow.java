@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 public record VesselInventoryRow(
         String vesselName,
         String product,
-        String port,
+        String dischargePort,
         LocalDateTime date,
-        String company
+        String companyFrom
 ) {
 }

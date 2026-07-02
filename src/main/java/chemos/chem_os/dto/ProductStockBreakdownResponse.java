@@ -4,7 +4,7 @@ import java.util.List;
 
 public record ProductStockBreakdownResponse(
         String product,
-        String port,
+        String dischargePort,
         Double physicalStockOpening,
         Double physicalSold,
         Double physicalUnsoldClosing,

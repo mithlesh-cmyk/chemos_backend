@@ -3,7 +3,7 @@ package chemos.chem_os.dto;
 public record VesselStockGroupAggregate(
         String vesselName,
         String product,
-        String port,
+        String dischargePort,
         Double total
 ) {
 }

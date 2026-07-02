@@ -6,6 +6,6 @@ public record VesselInventoryDetail(
         String vesselName,
         LocalDate eta,
         Long inventoryDays,
-        String company
+        String companyFrom
 ) {
 }

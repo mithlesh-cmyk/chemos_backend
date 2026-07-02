@@ -15,17 +15,17 @@ public interface PhysicalStockRepository extends JpaRepository<PhysicalStock, St
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.port.displayName)), COALESCE(SUM(ps.physicalStock), 0))
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(ps.physicalStock), 0))
         FROM PhysicalStock ps
         JOIN Purchase p ON p.id = ps.purchaseId
         WHERE p.status = chemos.chem_os.model.EntryStatus.CONFIRMED
-        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.port.displayName))
+        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselInventoryRow(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.port.displayName)), ps.updatedAt, p.companyTo)
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName)), ps.updatedAt, p.companyFrom)
         FROM PhysicalStock ps
         JOIN Purchase p ON p.id = ps.purchaseId
         WHERE p.status = chemos.chem_os.model.EntryStatus.CONFIRMED
