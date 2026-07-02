@@ -1,11 +1,6 @@
 package chemos.chem_os.services;
 
-import chemos.chem_os.dto.CreatePurchaseRequest;
-import chemos.chem_os.dto.FieldHighlight;
-import chemos.chem_os.dto.PhysicalStockImportResult;
-import chemos.chem_os.dto.PurchaseComparisonItem;
-import chemos.chem_os.dto.PurchaseComparisonResponse;
-import chemos.chem_os.dto.UpdatePurchaseRequest;
+import chemos.chem_os.dto.*;
 import chemos.chem_os.mapper.PurchaseMapper;
 import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
@@ -39,7 +34,8 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-public class PurchaseService {
+public class
+PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
     private final PhysicalStockRepository physicalStockRepository;
@@ -177,6 +173,8 @@ public class PurchaseService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentUser = (auth != null && auth.isAuthenticated()) ? auth.getName() : "system";
 
+        LocalDateTime sessionTimestamp = LocalDateTime.now();
+
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
                 .setSkipHeaderRecord(true)
@@ -210,13 +208,33 @@ public class PurchaseService {
                 }
 
                 // upsert — overwrite if already exists for this purchase
+//                PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
+//                        .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
+//                entry.setPhysicalStock(stock);
+//                entry.setUpdatedAt(sessionTimestamp);
+//                entry.setUpdatedBy(currentUser);
+//                physicalStockRepository.save(entry);
+//                updated++;
+                //Changed the upsert behav. for storing old values
                 PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
                         .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
+
+                double oldValue = entry.getPhysicalStock() != null ? entry.getPhysicalStock() : -1;
+
+                if (oldValue == stock) {
+                    // value didn't actually change — count as skipped
+                    skipped++;
+                    continue;
+                }
+
+// value changed — store previous, update current
+                entry.setPreviousStock(oldValue != -1 ? oldValue : null);
                 entry.setPhysicalStock(stock);
-                entry.setUpdatedAt(LocalDateTime.now());
+                entry.setUpdatedAt(sessionTimestamp);
                 entry.setUpdatedBy(currentUser);
                 physicalStockRepository.save(entry);
                 updated++;
+
             }
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to parse CSV: " + e.getMessage());
@@ -240,5 +258,17 @@ public class PurchaseService {
                 .map(PurchaseComparisonItem::id)
                 .orElse(null);
         return new FieldHighlight(bestId, worstId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhysicalStockSessionSummary> getStockUpdateSessions(String user) {
+        return (user == null || user.isBlank())
+                ? physicalStockRepository.findSessionSummaries()
+                : physicalStockRepository.findSessionSummariesByUser(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhysicalStock> getStockUpdateSessionDetail(String user, LocalDateTime timestamp) {
+        return physicalStockRepository.findByUpdatedByAndUpdatedAt(user, timestamp);
     }
 }
