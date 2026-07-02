@@ -12,16 +12,16 @@ public interface PortRepository extends JpaRepository<Ports, String> {
     @Query(value = """
     SELECT *
     FROM ports
-    WHERE 
-        -- If query is blank, match everything. Otherwise, apply search conditions.
-        :query = '' 
-        OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
-        OR LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT('%', :query, '%'))
-    ORDER BY 
-        CASE 
-            -- If query is empty, treat all entries with equal relevance priority
+    WHERE
+        (:isIndian IS NULL OR is_indian = :isIndian)
+        AND (
+            :query = ''
+            OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+        )
+    ORDER BY
+        CASE
             WHEN :query = '' THEN 1
-            -- If user typed text, prioritize matches starting with that string
             WHEN search_key LIKE LOWER(CONCAT(:query, '%')) THEN 1
             WHEN LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT(:query, '%')) THEN 2
             ELSE 3
@@ -29,14 +29,20 @@ public interface PortRepository extends JpaRepository<Ports, String> {
         display_name ASC
     """,
             countQuery = """
-    SELECT COUNT(*) 
-    FROM ports 
-    WHERE :query = '' 
-       OR search_key LIKE LOWER(CONCAT('%', :query, '%')) 
-       OR LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+    SELECT COUNT(*)
+    FROM ports
+    WHERE
+        (:isIndian IS NULL OR is_indian = :isIndian)
+        AND (
+            :query = ''
+            OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+        )
     """,
             nativeQuery = true)
-    Page<Ports> searchPorts(@Param("query") String query, Pageable pageable);
+    Page<Ports> searchPorts(@Param("query") String query, @Param("isIndian") Boolean isIndian, Pageable pageable);
 
     boolean existsBySearchKey(String searchKey);
+
+    java.util.Optional<Ports> findByDisplayNameIgnoreCase(String displayName);
 }

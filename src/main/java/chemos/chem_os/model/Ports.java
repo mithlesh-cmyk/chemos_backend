@@ -28,6 +28,10 @@ public class Ports {
     @Column(name = "locode")
     private String locode;
 
+    @Builder.Default
+    @Column(name = "is_indian", nullable = false, columnDefinition = "boolean default true")
+    private Boolean isIndian = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

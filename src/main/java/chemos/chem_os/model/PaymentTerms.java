@@ -19,10 +19,10 @@ public class PaymentTerms {
     @Id
     private Integer id;
 
-    @Column(name = "payment_term", nullable = false)
+    @Column(name = "payment_term", nullable = false, columnDefinition = "text")
     private String paymentTerm;
 
-    @Column(name = "payment_code")
+    @Column(name = "payment_code", columnDefinition = "text")
     private String paymentCode;
 
     @Column(name = "credit_days")

@@ -1,12 +1,20 @@
 package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
+import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Purchase;
+import chemos.chem_os.repository.PortRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import chemos.chem_os.dto.UpdatePurchaseRequest;
+import org.springframework.web.server.ResponseStatusException;
 
 @Component
+@RequiredArgsConstructor
 public class PurchaseMapper {
+
+    private final PortRepository portRepository;
 
     public Purchase toEntity(CreatePurchaseRequest request) {
 
@@ -19,15 +27,15 @@ public class PurchaseMapper {
                 .shipment(request.shipment())
                 .quantity(request.quantity())
                 .priceFc(request.priceFc())
+                .currency(request.currency())
                 .offerUsd(request.offerUsd())
                 .exchangeRate(request.exchangeRate())
                 .priceInr(request.priceInr())
                 .deliveryTerm(request.deliveryTerm())
                 .paymentDays(request.paymentDays())
-                .port(request.port())
+                .port(resolvePort(request.port()))
                 .marketPrice(request.marketPrice())
                 .marketStatus(request.marketStatus())
-                .costPrice(request.costPrice())
                 .replacementCost(request.replacementCost())
                 .make(request.make())
                 .packaging(request.packaging())
@@ -37,7 +45,7 @@ public class PurchaseMapper {
                 .sws(request.sws())
                 .add(request.add())
                 .otherExpense(request.otherExpense())
-                .dischargePorts(request.dischargePorts())
+                .dischargePort(resolvePort(request.dischargePorts()))
                 .priceType(request.priceType())
                 .paymentTerm(request.paymentTerm())
                 .etd(request.etd())
@@ -60,10 +68,9 @@ public class PurchaseMapper {
         purchase.setPriceInr(request.priceInr());
         purchase.setDeliveryTerm(request.deliveryTerm());
         purchase.setPaymentDays(request.paymentDays());
-        purchase.setPort(request.port());
+        purchase.setPort(resolvePort(request.port()));
         purchase.setMarketPrice(request.marketPrice());
         purchase.setMarketStatus(request.marketStatus());
-        purchase.setCostPrice(request.costPrice());
         purchase.setReplacementCost(request.replacementCost());
         purchase.setMake(request.make());
         purchase.setPackaging(request.packaging());
@@ -73,10 +80,18 @@ public class PurchaseMapper {
         purchase.setSws(request.sws());
         purchase.setAdd(request.add());
         purchase.setOtherExpense(request.otherExpense());
-        purchase.setDischargePorts(request.dischargePorts());
+        purchase.setDischargePort(resolvePort(request.dischargePorts()));
         purchase.setPriceType(request.priceType());
         purchase.setPaymentTerm(request.paymentTerm());
         purchase.setEtd(request.etd());
         purchase.setEta(request.eta());
+    }
+
+    private Ports resolvePort(String portIdentifier) {
+        if (portIdentifier == null || portIdentifier.isBlank()) return null;
+        return portRepository.findById(portIdentifier)
+                .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier));
     }
 }

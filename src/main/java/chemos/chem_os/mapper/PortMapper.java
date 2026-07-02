@@ -13,7 +13,8 @@ public class PortMapper {
         return new PortSuggestionResposne(
                 port.getId(),
                 port.getDisplayName(),
-                port.getLocode()
+                port.getLocode(),
+                port.getIsIndian()
         );
     }
 }

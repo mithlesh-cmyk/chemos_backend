@@ -43,6 +43,9 @@ public record PurchaseComparisonItem(
         BigDecimal otherExpense,
 
         @JsonProperty("landed_cost_per_mt")
-        BigDecimal landedCostPerMt
+        BigDecimal landedCostPerMt,
+
+        @JsonProperty("transit_days")
+        Integer transitDays
 ) {
 }
