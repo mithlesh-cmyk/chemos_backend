@@ -23,18 +23,20 @@ Authorization: Bearer <token>
 
 The logged-in user's role must have the `STOCK_STATS_VIEW` permission, or these endpoints return `403 Forbidden`.
 
-## Field glossary (shared across all 3 endpoints)
+## Field glossary
 
-| Field | Meaning |
-|---|---|
-| `physicalStockOpening` | Physical warehouse stock currently on hand (from the physical stock import) |
-| `physicalSold` | Physical ("Ready Market") stock sold today |
-| `physicalUnsoldClosing` | `physicalStockOpening − physicalSold` |
-| `incomingUnsoldOpening` | Incoming unsold balance carried forward from yesterday's closing |
-| `incomingUnsoldNew` | New "Incoming" purchases booked today |
-| `incomingSold` | "Incoming" stock sold today |
-| `incomingUnsoldClosing` | `incomingUnsoldOpening + incomingUnsoldNew − incomingSold` |
-| `totalStock` | `physicalUnsoldClosing + incomingUnsoldClosing` |
+`/stock-stats` and `/stock-stats/summary` use the original vessel-level field names. `/stock-stats/by-product` (the main inventory dashboard feed) uses renamed, UI-friendly fields — same underlying numbers, different names:
+
+| `/by-product` field | Equivalent on `/stock-stats` | Meaning |
+|---|---|---|
+| `physicalStock` | `physicalStockOpening` | Physical warehouse stock currently on hand (from the physical stock import) |
+| `physicalSold` | `physicalSold` | Physical ("Ready Market") stock sold today |
+| `physicalUnsold` | `physicalUnsoldClosing` | `physicalStock − physicalSold` |
+| `incomingStock` | `incomingUnsoldOpening` | Incoming unsold balance carried forward from yesterday's closing |
+| `purchaseIncoming` | `incomingUnsoldNew` | New "Incoming" purchases booked today |
+| `incomingSales` | `incomingSold` | "Incoming" stock sold today |
+| `incomingBalance` | `incomingUnsoldClosing` | `incomingStock + purchaseIncoming − incomingSales` |
+| `totalStock` | `totalStock` | `physicalUnsold + incomingBalance` |
 
 All values are in MT (metric tons), as `Double`. "Today" is the business day in `Asia/Kolkata`.
 
@@ -76,7 +78,7 @@ If nothing matches the filter, all fields are `0.0` (not an error).
 
 ## 2. `GET /api/v1/stock-stats/by-product`
 
-**Use for:** the item breakdown table — one row per (product, port) combination.
+**Use for:** the main inventory dashboard's item breakdown table — one row per (product, port) combination. No vessel-level detail (no vessel name, vessel date, or inventory days) — this endpoint is deliberately product+port only.
 
 No query params.
 
@@ -91,22 +93,14 @@ GET /api/v1/stock-stats/by-product
   {
     "product": "TOLUENE",
     "dischargePort": "KAOHSIUNG",
-    "physicalStockOpening": 150.0,
+    "physicalStock": 150.0,
     "physicalSold": 0.0,
-    "physicalUnsoldClosing": 150.0,
-    "incomingUnsoldOpening": 0.0,
-    "incomingUnsoldNew": 0.0,
-    "incomingSold": 0.0,
-    "incomingUnsoldClosing": 0.0,
-    "totalStock": 150.0,
-    "vesselInventory": [
-      {
-        "vesselName": "SEA FALCON",
-        "eta": "2026-06-20",
-        "inventoryDays": 11,
-        "companyFrom": "Our Company Ltd"
-      }
-    ]
+    "physicalUnsold": 150.0,
+    "incomingStock": 0.0,
+    "purchaseIncoming": 0.0,
+    "incomingSales": 0.0,
+    "incomingBalance": 0.0,
+    "totalStock": 150.0
   }
 ]
 ```
@@ -115,13 +109,7 @@ GET /api/v1/stock-stats/by-product
 
 `dischargePort` is the purchase's **discharge port** (`purchases.discharge_ports`) — the port the vessel unloads at and where the stock physically sits. This is deliberately not the purchase's `port` column, which is the *load* (origin) port; grouping by load port would scatter one physical stock lot across whatever port it was bought from instead of where it actually is.
 
-`vesselInventory` — one entry per physical-stock record (i.e. per vessel/purchase) contributing to this product+dischargePort, sourced from the `physical_stocks` table joined to its purchase:
-- `vesselName` — the purchase's vessel name.
-- `eta` — the date the physical stock record was last updated (`physical_stocks.updated_at`), used as the stock's "arrival" date.
-- `inventoryDays` — `today − eta` in days (business day, `Asia/Kolkata`). Sorted ascending by `eta`. Empty array if no physical stock is recorded for that product+dischargePort.
-- `companyFrom` — the purchase's `company_from` (the selling/supplying company this stock lot was bought from).
-
-**Why does `vesselInventory` sometimes have more than one entry?** Each entry is one *confirmed purchase* (one physical-stock row), not one product. If two different vessels both brought the same product into the same discharge port — e.g. two separate confirmed purchases of `MIXED XYLENE (SOLVENT)` arriving at `YEOSU PORT`, one via `MARITIME AMITY` and one via `STENA PROGRESSIVE` — that's two rows in `physical_stocks`, so `vesselInventory` has two objects. The parent object's `physicalStockOpening`/`totalStock` etc. are already the *sum* across all of them; `vesselInventory` is the itemized breakdown of what makes up that sum.
+If the same product arrives at two different discharge ports (e.g. Methanol at KANDLA PORT and Methanol at JNPT PORT), that's two separate objects in the array — one per (product, port) pair — never merged into a single row.
 
 ---
 
@@ -213,9 +201,7 @@ totalStock             = physicalUnsoldClosing + incomingUnsoldClosing
 
 - **`GET /stock-stats`** — returns the `GroupKey` rows as-is (`getStats()` → `computeGroupStats()`, no further aggregation). This is the finest-grained view; useful for debugging a specific vessel/product/port combination.
 - **`GET /stock-stats/summary`** — filters the `GroupKey` rows by optional `vesselName`/`product`, then sums 4 fields across whatever survives the filter (`getSummary()`). No grouping, just a filtered total.
-- **`GET /stock-stats/by-product`** — re-groups the `GroupKey` rows by a coarser key, `ProductPortKey(product, dischargePort)` (i.e. drops `vesselName` from the key), and sums every numeric field across all vessels that share a product+port (`getProductBreakdown()`, via `Collectors.groupingBy`). This is why a single row here can represent multiple vessels: it's the sum of every `GroupKey` row that shares that product+port.
-
-  Separately (not from `computeGroupStats()`), it also fetches `physicalStockRepository.findVesselInventoryRows()` — one raw row per physical-stock record, each carrying its own vessel/eta/company — and groups *those* by the same `ProductPortKey`. That's the `vesselInventory` array: the itemized list of individual purchase lots that were summed together to produce the row's totals. This is also the direct answer to "why does `vesselInventory` sometimes have 2+ objects" — it's not a bug or a merge artifact, it's one entry per underlying confirmed purchase/physical-stock record; a product+port combination fed by two different vessel deliveries will always show two entries there.
+- **`GET /stock-stats/by-product`** — re-groups the `GroupKey` rows by a coarser key, `ProductPortKey(product, dischargePort)` (i.e. drops `vesselName` from the key), and sums every numeric field across all vessels that share a product+port (`getProductBreakdown()`, via `Collectors.groupingBy`). This is why a single row here can represent multiple vessels' stock without ever mentioning a vessel: it's the sum of every `GroupKey` row that shares that product+port, with the fields renamed to the UI-facing names (`physicalStock`, `physicalSold`, `physicalUnsold`, `incomingStock`, `purchaseIncoming`, `incomingSales`, `incomingBalance`, `totalStock`).
 
 ### The nightly snapshot (why `incomingUnsoldOpening` isn't computed live)
 
