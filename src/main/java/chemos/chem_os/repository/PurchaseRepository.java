@@ -1,5 +1,6 @@
 package chemos.chem_os.repository;
 
+import chemos.chem_os.dto.VesselGroupCompany;
 import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Purchase;
@@ -25,4 +26,13 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingNewByGroup(@Param("onDate") LocalDate onDate);
+
+    @Query("""
+        SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName)), TRIM(p.companyFrom))
+        FROM Purchase p
+        WHERE p.companyFrom IS NOT NULL
+          AND p.status = chemos.chem_os.model.EntryStatus.CONFIRMED
+        """)
+    List<VesselGroupCompany> findCompanyFromByGroup();
 }

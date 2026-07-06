@@ -1,6 +1,7 @@
 package chemos.chem_os.services;
 
 import chemos.chem_os.dto.ProductStockBreakdownResponse;
+import chemos.chem_os.dto.VesselGroupCompany;
 import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
@@ -69,6 +70,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
+        Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyFromByGroup());
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -88,12 +90,13 @@ public class VesselStockStatsService {
             double incomingUnsoldClosing = incomingUnsoldOpening + incomingUnsoldNew - incomingSold;
 
             double totalStock = physicalUnsoldClosing + incomingUnsoldClosing;
+            String companyName = companyByGroup.get(key);
 
             results.add(new VesselStockStatsResponse(
                     key.vesselName(), key.product(), key.dischargePort(),
                     physicalStockOpening, physicalSold, physicalUnsoldClosing,
                     incomingUnsoldOpening, incomingUnsoldNew, incomingSold, incomingUnsoldClosing,
-                    totalStock
+                    totalStock, companyName
             ));
         }
         return results;
@@ -119,10 +122,21 @@ public class VesselStockStatsService {
                     sumField(rows, VesselStockStatsResponse::incomingUnsoldNew),
                     sumField(rows, VesselStockStatsResponse::incomingSold),
                     sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing),
-                    sumField(rows, VesselStockStatsResponse::totalStock)
+                    sumField(rows, VesselStockStatsResponse::totalStock),
+                    joinCompanies(rows)
             ));
         }
         return results;
+    }
+
+    private String joinCompanies(List<VesselStockStatsResponse> rows) {
+        return rows.stream()
+                .map(VesselStockStatsResponse::companyName)
+                .filter(c -> c != null && !c.isBlank())
+                .flatMap(c -> java.util.Arrays.stream(c.split(",\\s*")))
+                .collect(Collectors.toCollection(LinkedHashSet::new))
+                .stream()
+                .collect(Collectors.joining(", "));
     }
 
     private double sumField(List<VesselStockStatsResponse> rows, java.util.function.ToDoubleFunction<VesselStockStatsResponse> extractor) {
@@ -190,6 +204,15 @@ public class VesselStockStatsService {
                 VesselStockGroupAggregate::total,
                 Double::sum,
                 LinkedHashMap::new));
+    }
+
+    private Map<GroupKey, String> toCompanyMap(List<VesselGroupCompany> rows) {
+        return rows.stream().collect(Collectors.groupingBy(
+                r -> new GroupKey(r.vesselName(), r.product(), r.dischargePort()),
+                LinkedHashMap::new,
+                Collectors.collectingAndThen(
+                        Collectors.mapping(VesselGroupCompany::companyFrom, Collectors.toCollection(LinkedHashSet::new)),
+                        companies -> String.join(", ", companies))));
     }
 
     private record GroupKey(String vesselName, String product, String dischargePort) {

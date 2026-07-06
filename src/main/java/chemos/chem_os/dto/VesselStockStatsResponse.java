@@ -11,6 +11,7 @@ public record VesselStockStatsResponse(
         Double incomingUnsoldNew,
         Double incomingSold,
         Double incomingUnsoldClosing,
-        Double totalStock
+        Double totalStock,
+        String companyName
 ) {
 }

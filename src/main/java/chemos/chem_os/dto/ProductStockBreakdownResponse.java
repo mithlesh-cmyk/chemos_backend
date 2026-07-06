@@ -10,6 +10,7 @@ public record ProductStockBreakdownResponse(
         Double purchaseIncoming,
         Double incomingSales,
         Double incomingBalance,
-        Double totalStock
+        Double totalStock,
+        String companyName
 ) {
 }
