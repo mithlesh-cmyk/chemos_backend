@@ -1,13 +1,19 @@
 package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
+import chemos.chem_os.dto.UpdatePurchaseRequest;
+import chemos.chem_os.model.Countries;
+import chemos.chem_os.model.PaymentTerms;
 import chemos.chem_os.model.Ports;
+import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Purchase;
+import chemos.chem_os.repository.CountryRepository;
+import chemos.chem_os.repository.PaymentTermRepository;
 import chemos.chem_os.repository.PortRepository;
+import chemos.chem_os.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import chemos.chem_os.dto.UpdatePurchaseRequest;
 import org.springframework.web.server.ResponseStatusException;
 
 @Component
@@ -15,6 +21,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class PurchaseMapper {
 
     private final PortRepository portRepository;
+    private final ProductRepository productRepository;
+    private final CountryRepository countryRepository;
+    private final PaymentTermRepository paymentTermRepository;
 
     public Purchase toEntity(CreatePurchaseRequest request) {
 
@@ -22,7 +31,7 @@ public class PurchaseMapper {
                 .companyTo(request.companyTo())
                 .purchaseType(request.purchaseType())
                 .companyFrom(request.companyFrom())
-                .product(request.product())
+                .product(resolveProduct(request.product()))
                 .vesselName(request.vesselName())
                 .shipment(request.shipment())
                 .quantity(request.quantity())
@@ -39,7 +48,7 @@ public class PurchaseMapper {
                 .replacementCost(request.replacementCost())
                 .make(request.make())
                 .packaging(request.packaging())
-                .origin(request.origin())
+                .origin(resolveCountry(request.origin()))
                 .expense(request.expense())
                 .customDuty(request.customDuty())
                 .sws(request.sws())
@@ -47,7 +56,7 @@ public class PurchaseMapper {
                 .otherExpense(request.otherExpense())
                 .dischargePort(resolvePort(request.dischargePorts()))
                 .priceType(request.priceType())
-                .paymentTerm(request.paymentTerm())
+                .paymentTerm(resolvePaymentTerm(request.paymentTerm()))
                 .etd(request.etd())
                 .eta(request.eta())
                 .build();
@@ -57,7 +66,7 @@ public class PurchaseMapper {
         purchase.setCompanyTo(request.companyTo());
         purchase.setPurchaseType(request.purchaseType());
         purchase.setCompanyFrom(request.companyFrom());
-        purchase.setProduct(request.product());
+        purchase.setProduct(resolveProduct(request.product()));
         purchase.setVesselName(request.vesselName());
         purchase.setShipment(request.shipment());
         purchase.setQuantity(request.quantity());
@@ -74,7 +83,7 @@ public class PurchaseMapper {
         purchase.setReplacementCost(request.replacementCost());
         purchase.setMake(request.make());
         purchase.setPackaging(request.packaging());
-        purchase.setOrigin(request.origin());
+        purchase.setOrigin(resolveCountry(request.origin()));
         purchase.setExpense(request.expense());
         purchase.setCustomDuty(request.customDuty());
         purchase.setSws(request.sws());
@@ -82,7 +91,7 @@ public class PurchaseMapper {
         purchase.setOtherExpense(request.otherExpense());
         purchase.setDischargePort(resolvePort(request.dischargePorts()));
         purchase.setPriceType(request.priceType());
-        purchase.setPaymentTerm(request.paymentTerm());
+        purchase.setPaymentTerm(resolvePaymentTerm(request.paymentTerm()));
         purchase.setEtd(request.etd());
         purchase.setEta(request.eta());
     }
@@ -93,5 +102,37 @@ public class PurchaseMapper {
                 .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier));
+    }
+
+    private Products resolveProduct(String productIdentifier) {
+        if (productIdentifier == null || productIdentifier.isBlank()) return null;
+        return productRepository.findById(productIdentifier)
+                .or(() -> productRepository.findByNameIgnoreCase(productIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Product not found: " + productIdentifier));
+    }
+
+    private Countries resolveCountry(String countryIdentifier) {
+        if (countryIdentifier == null || countryIdentifier.isBlank()) return null;
+        return countryRepository.findById(countryIdentifier)
+                .or(() -> countryRepository.findByDisplayNameIgnoreCase(countryIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Country not found: " + countryIdentifier));
+    }
+
+    private PaymentTerms resolvePaymentTerm(String paymentTermIdentifier) {
+        if (paymentTermIdentifier == null || paymentTermIdentifier.isBlank()) return null;
+
+        // Try numeric ID first, ONLY if the string is actually numeric.
+        // Falls back to name match otherwise — avoids NumberFormatException on text like "LC 30 days".
+        if (paymentTermIdentifier.matches("\\d+")) {
+            return paymentTermRepository.findById(Integer.valueOf(paymentTermIdentifier))
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, "Payment Term not found: " + paymentTermIdentifier));
+        }
+
+        return paymentTermRepository.findByPaymentTermIgnoreCase(paymentTermIdentifier)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Payment Term not found: " + paymentTermIdentifier));
     }
 }

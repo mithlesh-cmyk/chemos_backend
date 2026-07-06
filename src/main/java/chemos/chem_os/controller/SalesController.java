@@ -37,7 +37,7 @@ public class SalesController {
     public ResponseEntity<Page<Sales>> getAllSales(
             @RequestParam(required = false) EntryStatus status,
             @RequestParam(required = false) String product,
-            @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(salesService.getAllSales(status, product, pageable));
     }
 
@@ -67,7 +67,7 @@ public class SalesController {
             @RequestParam(required = false) String port,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
-            Pageable pageable
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         SalesFilterRequest filters = new SalesFilterRequest(product, companyTo, port, startDate, endDate);
         Page<Sales> result = salesService.getFilteredSales(filters, pageable);

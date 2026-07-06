@@ -32,11 +32,14 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
-    public ResponseEntity<List<Purchase>> getAllPurchase(
+    public List<Purchase> getAllPurchase(
             @RequestParam(required = false) EntryStatus status,
-            @RequestParam(required = false) String product) {
-        return ResponseEntity.ok(purchaseService.getAllPurchase(status, product));
+            @RequestParam(required = false) String product,
+            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDir) {
+        return purchaseService.getAllPurchase(status, product, sortBy, sortDir);
     }
+
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/{id}")
