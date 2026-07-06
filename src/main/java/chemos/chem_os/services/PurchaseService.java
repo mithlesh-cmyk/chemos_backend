@@ -174,7 +174,7 @@ PurchaseService {
                         p.getId(),
                         p.getEta() != null ? p.getEta().toString() : "",
                         p.getVesselName() != null ? p.getVesselName() : "",
-                        p.getProduct() != null ? p.getProduct() : "",
+                        p.getProduct() != null ? p.getProduct().getName() : "",
                         p.getPort() != null ? p.getPort().getDisplayName() : "",
                         ""  // always blank — user fills this in
                 );

@@ -3,11 +3,11 @@ package chemos.chem_os.mapper;
 import chemos.chem_os.dto.CreatePurchaseRequest;
 import chemos.chem_os.dto.UpdatePurchaseRequest;
 import chemos.chem_os.model.Countries;
-import chemos.chem_os.model.PaymentTerms;
 import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.CountryRepository;
+import chemos.chem_os.repository.PaymentTermRepository;
 import chemos.chem_os.repository.PortRepository;
 import chemos.chem_os.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +21,8 @@ public class PurchaseMapper {
 
     private final PortRepository portRepository;
     private final CountryRepository countryRepository;
+    private final ProductRepository productRepository;
+    private final PaymentTermRepository paymentTermRepository;
 
     public Purchase toEntity(CreatePurchaseRequest request) {
 
@@ -45,7 +47,6 @@ public class PurchaseMapper {
                 .replacementCost(request.replacementCost())
                 .make(request.make())
                 .packaging(request.packaging())
-                .origin(resolveCountry(request.origin()))
                 .origin(resolveCountry(request.origin()))
                 .expense(request.expense())
                 .customDuty(request.customDuty())
@@ -82,7 +83,6 @@ public class PurchaseMapper {
         purchase.setMake(request.make());
         purchase.setPackaging(request.packaging());
         purchase.setOrigin(resolveCountry(request.origin()));
-        purchase.setOrigin(resolveCountry(request.origin()));
         purchase.setExpense(request.expense());
         purchase.setCustomDuty(request.customDuty());
         purchase.setSws(request.sws());
@@ -103,11 +103,25 @@ public class PurchaseMapper {
                         HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier));
     }
 
-    private String resolveCountry(String countryId) {
+    private Countries resolveCountry(String countryId) {
         if (countryId == null || countryId.isBlank()) return null;
         return countryRepository.findById(countryId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Country not found: " + countryId))
+                        HttpStatus.BAD_REQUEST, "Country not found: " + countryId));
+    }
+
+    private Products resolveProduct(String productId) {
+        if (productId == null || productId.isBlank()) return null;
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Product not found: " + productId));
+    }
+
+    private Integer resolvePaymentTerm(Integer paymentTermId) {
+        if (paymentTermId == null) return null;
+        return paymentTermRepository.findById(paymentTermId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Payment term not found: " + paymentTermId))
                 .getId();
     }
 }
