@@ -32,6 +32,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.springframework.data.domain.Sort;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,8 +54,9 @@ PurchaseService {
         return saved;
     }
 
-    public List<Purchase> getAllPurchase(EntryStatus status, String product) {
+    public List<Purchase> getAllPurchase(EntryStatus status, String product, String sortBy, String sortDir) {
         Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
+
         if (status != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
         }
@@ -60,7 +64,12 @@ PurchaseService {
             spec = spec.and((root, query, cb) ->
                     cb.equal(cb.lower(root.get("product")), product.trim().toLowerCase()));
         }
-        return purchaseRepository.findAll(spec);
+
+        String sortField = (sortBy == null || sortBy.isBlank()) ? "createdAt" : sortBy;
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(direction, sortField);
+
+        return purchaseRepository.findAll(spec, sort);
     }
 
     public Purchase getPurchaseById(String id) {

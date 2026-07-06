@@ -27,16 +27,18 @@ public class Purchase {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "company_to")
-    private String companyTo;
-
     @Column(name = "purchase_type")
     private String purchaseType;
+
+    @Column(name = "company_to")
+    private String companyTo;
 
     @Column(name = "company_from")
     private String companyFrom;
 
-    private String product;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "product")
+    private Products product;
 
     @Column(name = "vessel_name")
     private String vesselName;
@@ -82,7 +84,9 @@ public class Purchase {
 
     private String packaging;
 
-    private String origin;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "origin")
+    private Countries origin;
 
     @Column(precision = 19, scale = 4)
     private BigDecimal expense;
