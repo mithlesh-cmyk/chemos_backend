@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 public class Purchase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private String id;
 
@@ -107,7 +107,7 @@ public class Purchase {
     private String priceType;
 
     @Column(name = "payment_term")
-    private String paymentTerm;
+    private Integer paymentTerm;
 
     private LocalDate etd;
 

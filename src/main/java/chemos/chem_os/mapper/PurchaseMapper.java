@@ -3,6 +3,7 @@ package chemos.chem_os.mapper;
 import chemos.chem_os.dto.CreatePurchaseRequest;
 import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Purchase;
+import chemos.chem_os.repository.CountryRepository;
 import chemos.chem_os.repository.PortRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class PurchaseMapper {
 
     private final PortRepository portRepository;
+    private final CountryRepository countryRepository;
 
     public Purchase toEntity(CreatePurchaseRequest request) {
 
@@ -39,7 +41,7 @@ public class PurchaseMapper {
                 .replacementCost(request.replacementCost())
                 .make(request.make())
                 .packaging(request.packaging())
-                .origin(request.origin())
+                .origin(resolveCountry(request.origin()))
                 .expense(request.expense())
                 .customDuty(request.customDuty())
                 .sws(request.sws())
@@ -74,7 +76,7 @@ public class PurchaseMapper {
         purchase.setReplacementCost(request.replacementCost());
         purchase.setMake(request.make());
         purchase.setPackaging(request.packaging());
-        purchase.setOrigin(request.origin());
+        purchase.setOrigin(resolveCountry(request.origin()));
         purchase.setExpense(request.expense());
         purchase.setCustomDuty(request.customDuty());
         purchase.setSws(request.sws());
@@ -93,5 +95,13 @@ public class PurchaseMapper {
                 .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier));
+    }
+
+    private String resolveCountry(String countryId) {
+        if (countryId == null || countryId.isBlank()) return null;
+        return countryRepository.findById(countryId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Country not found: " + countryId))
+                .getId();
     }
 }
