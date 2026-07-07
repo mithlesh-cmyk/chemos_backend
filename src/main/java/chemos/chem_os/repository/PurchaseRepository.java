@@ -29,10 +29,10 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
 
     @Query("""
         SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName)), TRIM(p.companyFrom))
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product)), UPPER(TRIM(p.dischargePort.displayName)), TRIM(p.companyTo))
         FROM Purchase p
-        WHERE p.companyFrom IS NOT NULL
+        WHERE p.companyTo IS NOT NULL
           AND p.status = chemos.chem_os.model.EntryStatus.CONFIRMED
         """)
-    List<VesselGroupCompany> findCompanyFromByGroup();
+    List<VesselGroupCompany> findCompanyToByGroup();
 }

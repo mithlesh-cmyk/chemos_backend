@@ -70,7 +70,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
-        Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyFromByGroup());
+        Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -211,7 +211,7 @@ public class VesselStockStatsService {
                 r -> new GroupKey(r.vesselName(), r.product(), r.dischargePort()),
                 LinkedHashMap::new,
                 Collectors.collectingAndThen(
-                        Collectors.mapping(VesselGroupCompany::companyFrom, Collectors.toCollection(LinkedHashSet::new)),
+                        Collectors.mapping(VesselGroupCompany::companyTo, Collectors.toCollection(LinkedHashSet::new)),
                         companies -> String.join(", ", companies))));
     }
 

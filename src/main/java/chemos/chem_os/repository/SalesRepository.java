@@ -30,23 +30,23 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
-            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port)), COALESCE(SUM(s.quantity), 0))
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(s.port)), COALESCE(SUM(s.quantity), 0))
         FROM Sales s
         WHERE s.marketStatus = 'ready'
           AND s.date <= :onDate
           AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
-        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port))
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(s.port))
         """)
     List<VesselStockGroupAggregate> sumReadyMarketSoldByGroup(@Param("onDate") LocalDate onDate);
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
-            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port)), COALESCE(SUM(s.quantity), 0))
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(s.port)), COALESCE(SUM(s.quantity), 0))
         FROM Sales s
         WHERE s.marketStatus = 'incoming'
           AND s.date = :onDate
           AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
-        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port))
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(s.port))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldByGroup(@Param("onDate") LocalDate onDate);
 }

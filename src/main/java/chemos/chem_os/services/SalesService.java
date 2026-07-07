@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -39,8 +40,14 @@ public class SalesService {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
         }
         if (product != null && !product.isBlank()) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(cb.lower(root.get("product")), product.trim().toLowerCase()));
+            String productFilter = product.trim();
+            spec = spec.and((root, query, cb) -> {
+            var productJoin = root.join("product", JoinType.LEFT);
+            return cb.or(
+                cb.equal(productJoin.get("id"), productFilter),
+                cb.equal(cb.lower(productJoin.get("name")), productFilter.toLowerCase())
+            );
+            });
         }
         return salesRepository.findAll(spec, pageable);
     }

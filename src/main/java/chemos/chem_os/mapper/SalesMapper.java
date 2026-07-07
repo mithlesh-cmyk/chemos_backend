@@ -21,8 +21,9 @@ public class SalesMapper {
     private final PortRepository portRepository;
 
     private Products resolveProduct(String productId) {
-        if (productId == null) return null;
+        if (productId == null || productId.isBlank()) return null;
         return productRepository.findById(productId)
+            .or(() -> productRepository.findByNameIgnoreCase(productId))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Product not found with id: " + productId

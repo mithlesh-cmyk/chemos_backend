@@ -4,6 +4,6 @@ public record VesselGroupCompany(
         String vesselName,
         String product,
         String dischargePort,
-        String companyFrom
+        String companyTo
 ) {
 }
