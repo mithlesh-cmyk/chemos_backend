@@ -4,6 +4,7 @@ import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Sales;
+import chemos.chem_os.repository.PortRepository;
 import chemos.chem_os.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 public class SalesMapper {
 
     private final ProductRepository productRepository;
+    private final PortRepository portRepository;
 
     private Products resolveProduct(String productId) {
         if (productId == null) return null;
@@ -25,6 +27,15 @@ public class SalesMapper {
                         HttpStatus.BAD_REQUEST,
                         "Product not found with id: " + productId
                 ));
+    }
+
+    private String resolvePort(String portIdentifier) {
+        if (portIdentifier == null || portIdentifier.isBlank()) return null;
+        return portRepository.findById(portIdentifier)
+                .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier))
+                .getId();
     }
 
     public Sales toEntity(CreateSaleRequest request) {
