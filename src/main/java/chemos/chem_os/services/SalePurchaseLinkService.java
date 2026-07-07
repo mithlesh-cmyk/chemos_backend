@@ -129,15 +129,17 @@ public class SalePurchaseLinkService {
                 : username.trim();
 
         List<SalePurchaseLink> links = linkRepository.findByCreatedByUsernameOrderByCreatedAtDesc(resolvedUsername);
-        return links.stream().map(link -> {
-            Purchase purchase = purchaseRepository.findById(link.getPurchaseId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Purchase not found with id: " + link.getPurchaseId()));
-            Sales sale = salesRepository.findById(link.getSaleId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Sale not found with id: " + link.getSaleId()));
-            return buildResponse(link, purchase, sale);
-        }).toList();
+        return links.stream()
+                .map(link -> {
+                    Purchase purchase = purchaseRepository.findById(link.getPurchaseId()).orElse(null);
+                    Sales sale = salesRepository.findById(link.getSaleId()).orElse(null);
+                    if (purchase == null || sale == null) {
+                        return null;
+                    }
+                    return buildResponse(link, purchase, sale);
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 
     @Transactional(readOnly = true)

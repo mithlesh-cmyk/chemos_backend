@@ -32,8 +32,8 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
             UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port)), COALESCE(SUM(s.quantity), 0))
         FROM Sales s
-        WHERE s.marketStatus = 'Ready Market'
-          AND s.date = :onDate
+        WHERE s.marketStatus = 'ready'
+          AND s.date <= :onDate
           AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port))
         """)
@@ -43,7 +43,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
             UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port)), COALESCE(SUM(s.quantity), 0))
         FROM Sales s
-        WHERE s.marketStatus = 'Incoming'
+        WHERE s.marketStatus = 'incoming'
           AND s.date = :onDate
           AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product)), UPPER(TRIM(s.port))

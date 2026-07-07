@@ -3,13 +3,20 @@ package chemos.chem_os.mapper;
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
+import chemos.chem_os.repository.PortRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class SalesMapper {
+
+    private final PortRepository portRepository;
 
     public Sales toEntity(CreateSaleRequest request){
 
@@ -23,7 +30,7 @@ public class SalesMapper {
                 .price(request.price())
                 .payment(request.payment())
                 .deliveryTerm(request.deliveryTerm())
-                .port(request.port())
+                .port(resolvePort(request.port()))
                 .marketPrice(request.marketPrice())
                 .marketStatus(request.marketStatus())
                 .storageDays(request.storageDays())
@@ -49,7 +56,7 @@ public class SalesMapper {
         sale.setPrice(request.price());
         sale.setPayment(request.payment());
         sale.setDeliveryTerm(request.deliveryTerm());
-        sale.setPort(request.port());
+        sale.setPort(resolvePort(request.port()));
         sale.setMarketPrice(request.marketPrice());
         sale.setMarketStatus(request.marketStatus());
         sale.setStorageDays(request.storageDays());
@@ -60,5 +67,14 @@ public class SalesMapper {
         sale.setMessage(request.message());
         sale.setVesselName(request.vesselName());
         sale.setRemarks(request.remarks());
+    }
+
+    private String resolvePort(String portIdentifier) {
+        if (portIdentifier == null || portIdentifier.isBlank()) return null;
+        return portRepository.findById(portIdentifier)
+                .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier))
+                .getId();
     }
 }
