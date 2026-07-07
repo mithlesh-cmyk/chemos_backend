@@ -93,13 +93,36 @@ public class VesselStockStatsService {
             String companyName = companyByGroup.get(key);
 
             results.add(new VesselStockStatsResponse(
-                    key.vesselName(), key.product(), key.dischargePort(),
+                    key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
                     physicalStockOpening, physicalSold, physicalUnsoldClosing,
                     incomingUnsoldOpening, incomingUnsoldNew, incomingSold, incomingUnsoldClosing,
                     totalStock, companyName
             ));
         }
         return results;
+    }
+    
+    private String cleanProductName(String productName) {
+        if (productName == null || productName.isBlank()) {
+            return productName;
+        }
+        // Pattern: "NAME-HSCODE" where HSCODE is 8 digits
+        // Example: "ACETIC-ACID-29152100" -> "ACETIC ACID"
+        String[] parts = productName.split("-");
+        if (parts.length > 1) {
+            String lastPart = parts[parts.length - 1];
+            // Check if last part is an 8-digit HS code
+            if (lastPart.matches("\\d{8}")) {
+                // Reconstruct name without HS code, replacing dashes with spaces
+                StringBuilder cleanName = new StringBuilder();
+                for (int i = 0; i < parts.length - 1; i++) {
+                    if (i > 0) cleanName.append(" ");
+                    cleanName.append(parts[i]);
+                }
+                return cleanName.toString();
+            }
+        }
+        return productName;
     }
 
     @Transactional(readOnly = true)
