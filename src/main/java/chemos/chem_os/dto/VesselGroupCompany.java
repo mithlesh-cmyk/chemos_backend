@@ -1,9 +1,9 @@
 package chemos.chem_os.dto;
 
-public record VesselStockGroupAggregate(
+public record VesselGroupCompany(
         String vesselName,
         String product,
         String dischargePort,
-        Double total
+        String companyFrom
 ) {
 }

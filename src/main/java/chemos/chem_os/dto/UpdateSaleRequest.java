@@ -4,7 +4,7 @@ public record UpdateSaleRequest(
         String salesType,
         String companyTo,
         String companyFrom,
-        String product,
+        String productId,
         Double quantity,
         Double price,
         String payment,

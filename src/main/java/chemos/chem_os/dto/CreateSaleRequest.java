@@ -7,7 +7,7 @@ public record CreateSaleRequest(
 
         String companyFrom,
         
-        String product,
+        String productId,
         
         Double quantity,
         

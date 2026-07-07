@@ -6,9 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 
 @Data
 @NoArgsConstructor
@@ -37,8 +41,9 @@ public class Sales {
     @Column(name = "company_from")
     private String companyFrom;
 
-    @Column(name = "product")
-    private String product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Products product;
 
     @Column(name = "quantity")
     private Double quantity;
@@ -95,4 +100,8 @@ public class Sales {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EntryStatus status = EntryStatus.UNCONFIRMED;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }

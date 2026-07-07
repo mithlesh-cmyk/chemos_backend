@@ -1,18 +1,16 @@
 package chemos.chem_os.dto;
 
-import java.util.List;
-
 public record ProductStockBreakdownResponse(
         String product,
-        String port,
-        Double physicalStockOpening,
+        String dischargePort,
+        Double physicalStock,
         Double physicalSold,
-        Double physicalUnsoldClosing,
-        Double incomingUnsoldOpening,
-        Double incomingUnsoldNew,
-        Double incomingSold,
-        Double incomingUnsoldClosing,
+        Double physicalUnsold,
+        Double incomingStock,
+        Double purchaseIncoming,
+        Double incomingSales,
+        Double incomingBalance,
         Double totalStock,
-        List<VesselInventoryDetail> vesselInventory
+        String companyName
 ) {
 }

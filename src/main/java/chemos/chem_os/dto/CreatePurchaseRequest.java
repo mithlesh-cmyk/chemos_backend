@@ -81,7 +81,7 @@ public record CreatePurchaseRequest(
         String priceType,
 
         @JsonProperty("payment_term")
-        String paymentTerm,
+        Integer paymentTerm,
 
         LocalDate etd,
 

@@ -32,7 +32,7 @@ public record UpdatePurchaseRequest(
         BigDecimal otherExpense,
         String dischargePorts,
         String priceType,
-        String paymentTerm,
+        Integer paymentTerm,
         LocalDate etd,
         LocalDate eta
 ) {}
