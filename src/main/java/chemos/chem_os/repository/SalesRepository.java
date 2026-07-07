@@ -15,12 +15,12 @@ import java.util.List;
 public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecificationExecutor<Sales> {
 
     @Query("SELECT s FROM Sales s WHERE " +
-            "(:product IS NULL OR s.product = :product) AND " +
+            "(:productId IS NULL OR s.product.id = :productId) AND " +
             "(:companyTo IS NULL OR s.companyTo = :companyTo) AND " +
             "(:port IS NULL OR s.port = :port) AND " +
             "s.date >= :startDate AND s.date <= :endDate")
     Page<Sales> findWithFilters(
-            @Param("product") String product,
+            @Param("productId") String productId,
             @Param("companyTo") String companyTo,
             @Param("port") String port,
             @Param("startDate") LocalDate startDate,

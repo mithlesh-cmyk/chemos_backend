@@ -62,14 +62,14 @@ public class SalesController {
 
     @GetMapping("/filter")
     public ResponseEntity<Page<Sales>> getFilteredSales(
-            @RequestParam(required = false) String product,
+            @RequestParam(required = false) String productId,
             @RequestParam(required = false) String companyTo,
             @RequestParam(required = false) String port,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            Pageable pageable
     ) {
-        SalesFilterRequest filters = new SalesFilterRequest(product, companyTo, port, startDate, endDate);
+        SalesFilterRequest filters = new SalesFilterRequest(productId, companyTo, port, startDate, endDate);
         Page<Sales> result = salesService.getFilteredSales(filters, pageable);
         return ResponseEntity.ok(result);
     }

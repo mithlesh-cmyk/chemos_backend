@@ -2,30 +2,38 @@ package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
+import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Sales;
-import chemos.chem_os.repository.PortRepository;
+import chemos.chem_os.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
 public class SalesMapper {
 
-    private final PortRepository portRepository;
+    private final ProductRepository productRepository;
 
-    public Sales toEntity(CreateSaleRequest request){
+    private Products resolveProduct(String productId) {
+        if (productId == null) return null;
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Product not found with id: " + productId
+                ));
+    }
 
+    public Sales toEntity(CreateSaleRequest request) {
         return Sales.builder()
                 .date(LocalDate.now())
                 .salesType(request.salesType())
                 .companyFrom(request.companyFrom())
                 .companyTo(request.companyTo())
-                .product(request.product())
+                .product(resolveProduct(request.productId()))
                 .quantity(request.quantity())
                 .price(request.price())
                 .payment(request.payment())
@@ -41,17 +49,14 @@ public class SalesMapper {
                 .message(request.message())
                 .vesselName(request.vesselName())
                 .remarks(request.remarks())
-                .salesPerson(request.salesPerson())
-                .brokerName(request.brokerName())
                 .build();
-
     }
+
     public void updateEntity(Sales sale, UpdateSaleRequest request) {
         sale.setSalesType(request.salesType());
-        sale.setUpdatedAt(LocalDateTime.now());
         sale.setCompanyTo(request.companyTo());
         sale.setCompanyFrom(request.companyFrom());
-        sale.setProduct(request.product());
+        sale.setProduct(resolveProduct(request.productId()));
         sale.setQuantity(request.quantity());
         sale.setPrice(request.price());
         sale.setPayment(request.payment());
@@ -67,14 +72,6 @@ public class SalesMapper {
         sale.setMessage(request.message());
         sale.setVesselName(request.vesselName());
         sale.setRemarks(request.remarks());
-    }
-
-    private String resolvePort(String portIdentifier) {
-        if (portIdentifier == null || portIdentifier.isBlank()) return null;
-        return portRepository.findById(portIdentifier)
-                .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier))
-                .getId();
+        sale.setUpdatedAt(java.time.LocalDateTime.now());
     }
 }

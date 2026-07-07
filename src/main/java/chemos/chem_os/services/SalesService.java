@@ -80,7 +80,7 @@ public class SalesService {
         LocalDate effectiveEnd = filters.endDate() != null ? filters.endDate() : LocalDate.of(2999, 12, 31);
 
         return salesRepository.findWithFilters(
-                filters.product(),
+                filters.productId(),
                 filters.companyTo(),
                 filters.port(),
                 effectiveStart,
