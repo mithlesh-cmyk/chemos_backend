@@ -2,6 +2,7 @@ package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
+import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.repository.PortRepository;
@@ -30,13 +31,16 @@ public class SalesMapper {
                 ));
     }
 
-    private String resolvePort(String portIdentifier) {
-        if (portIdentifier == null || portIdentifier.isBlank()) return null;
+    private Ports resolvePort(String portIdentifier) {
+        if (portIdentifier == null || portIdentifier.isBlank()) {
+            return null;
+        }
+
         return portRepository.findById(portIdentifier)
                 .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Port not found: " + portIdentifier))
-                .getId();
+                        HttpStatus.BAD_REQUEST,
+                        "Port not found: " + portIdentifier));
     }
 
     public Sales toEntity(CreateSaleRequest request) {
