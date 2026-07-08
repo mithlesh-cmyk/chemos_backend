@@ -106,14 +106,13 @@ public class VesselStockStatsService {
         if (productName == null || productName.isBlank()) {
             return productName;
         }
-        // Pattern: "NAME-HSCODE" where HSCODE is 8 digits
-        // Example: "ACETIC-ACID-29152100" -> "ACETIC ACID"
+
         String[] parts = productName.split("-");
         if (parts.length > 1) {
             String lastPart = parts[parts.length - 1];
-            // Check if last part is an 8-digit HS code
+
             if (lastPart.matches("\\d{8}")) {
-                // Reconstruct name without HS code, replacing dashes with spaces
+
                 StringBuilder cleanName = new StringBuilder();
                 for (int i = 0; i < parts.length - 1; i++) {
                     if (i > 0) cleanName.append(" ");
@@ -133,23 +132,38 @@ public class VesselStockStatsService {
                         LinkedHashMap::new,
                         Collectors.toList()));
 
+        Map<ProductPortKey, Double> totalPurchaseIncomingByGroup = toProductPortMap(purchaseRepository.sumIncomingConfirmedByGroup());
+        Map<ProductPortKey, Double> totalIncomingSaleByGroup = toProductPortMap(salesRepository.sumIncomingConfirmedByGroup());
+
+        Set<ProductPortKey> allKeys = new LinkedHashSet<>(byProductPort.keySet());
+        allKeys.addAll(totalPurchaseIncomingByGroup.keySet());
+        allKeys.addAll(totalIncomingSaleByGroup.keySet());
+
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
-        for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
-            List<VesselStockStatsResponse> rows = entry.getValue();
+        for (ProductPortKey key : allKeys) {
+            List<VesselStockStatsResponse> rows = byProductPort.getOrDefault(key, List.of());
             results.add(new ProductStockBreakdownResponse(
-                    entry.getKey().product(), entry.getKey().dischargePort(),
+                    key.product(), key.dischargePort(),
                     sumField(rows, VesselStockStatsResponse::physicalStockOpening),
                     sumField(rows, VesselStockStatsResponse::physicalSold),
                     sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing),
                     sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening),
-                    sumField(rows, VesselStockStatsResponse::incomingUnsoldNew),
-                    sumField(rows, VesselStockStatsResponse::incomingSold),
+                    totalPurchaseIncomingByGroup.getOrDefault(key, 0.0),
+                    totalIncomingSaleByGroup.getOrDefault(key, 0.0),
                     sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing),
                     sumField(rows, VesselStockStatsResponse::totalStock),
                     joinCompanies(rows)
             ));
         }
         return results;
+    }
+
+    private Map<ProductPortKey, Double> toProductPortMap(List<VesselStockGroupAggregate> rows) {
+        return rows.stream().collect(Collectors.toMap(
+                r -> new ProductPortKey(cleanProductName(r.product()), r.dischargePort()),
+                VesselStockGroupAggregate::total,
+                Double::sum,
+                LinkedHashMap::new));
     }
 
     private String joinCompanies(List<VesselStockStatsResponse> rows) {
