@@ -16,6 +16,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -55,10 +57,10 @@ public class VesselStockStatsService {
                 .filter(r -> productFilter == null || productFilter.equals(normalize(r.product())))
                 .toList();
 
-        double totalStock = matching.stream().mapToDouble(VesselStockStatsResponse::totalStock).sum();
-        double physicalUnsoldClosing = matching.stream().mapToDouble(VesselStockStatsResponse::physicalUnsoldClosing).sum();
-        double incomingUnsoldClosing = matching.stream().mapToDouble(VesselStockStatsResponse::incomingUnsoldClosing).sum();
-        double incomingSold = matching.stream().mapToDouble(VesselStockStatsResponse::incomingSold).sum();
+        double totalStock = round(matching.stream().mapToDouble(VesselStockStatsResponse::totalStock).sum());
+        double physicalUnsoldClosing = round(matching.stream().mapToDouble(VesselStockStatsResponse::physicalUnsoldClosing).sum());
+        double incomingUnsoldClosing = round(matching.stream().mapToDouble(VesselStockStatsResponse::incomingUnsoldClosing).sum());
+        double incomingSold = round(matching.stream().mapToDouble(VesselStockStatsResponse::incomingSold).sum());
 
         return new VesselStockStatsSummaryResponse(totalStock, physicalUnsoldClosing, incomingUnsoldClosing, incomingSold);
     }
@@ -70,7 +72,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
-        Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyFromByGroup());
+        Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -80,26 +82,52 @@ public class VesselStockStatsService {
 
         List<VesselStockStatsResponse> results = new ArrayList<>();
         for (GroupKey key : allGroups) {
-            double physicalStockOpening = physicalOpeningByGroup.getOrDefault(key, 0.0);
-            double physicalSold = physicalSoldByGroup.getOrDefault(key, 0.0);
-            double physicalUnsoldClosing = physicalStockOpening - physicalSold;
+            double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
+            double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
+            double physicalUnsoldClosing = round(physicalStockOpening - physicalSold);
 
-            double incomingUnsoldOpening = resolveIncomingOpening(key, today);
-            double incomingUnsoldNew = incomingNewByGroup.getOrDefault(key, 0.0);
-            double incomingSold = incomingSoldByGroup.getOrDefault(key, 0.0);
-            double incomingUnsoldClosing = incomingUnsoldOpening + incomingUnsoldNew - incomingSold;
+            double incomingUnsoldOpening = round(resolveIncomingOpening(key, today));
+            double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
+            double incomingSold = round(incomingSoldByGroup.getOrDefault(key, 0.0));
+            double incomingUnsoldClosing = round(incomingUnsoldOpening + incomingUnsoldNew - incomingSold);
 
-            double totalStock = physicalUnsoldClosing + incomingUnsoldClosing;
+            double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
             String companyName = companyByGroup.get(key);
 
             results.add(new VesselStockStatsResponse(
-                    key.vesselName(), key.product(), key.dischargePort(),
+                    key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
                     physicalStockOpening, physicalSold, physicalUnsoldClosing,
                     incomingUnsoldOpening, incomingUnsoldNew, incomingSold, incomingUnsoldClosing,
                     totalStock, companyName
             ));
         }
         return results;
+    }
+
+    private static double round(double value) {
+        return BigDecimal.valueOf(value).setScale(3, RoundingMode.HALF_UP).doubleValue();
+    }
+    
+    private String cleanProductName(String productName) {
+        if (productName == null || productName.isBlank()) {
+            return productName;
+        }
+
+        String[] parts = productName.split("-");
+        if (parts.length > 1) {
+            String lastPart = parts[parts.length - 1];
+
+            if (lastPart.matches("\\d{8}")) {
+
+                StringBuilder cleanName = new StringBuilder();
+                for (int i = 0; i < parts.length - 1; i++) {
+                    if (i > 0) cleanName.append(" ");
+                    cleanName.append(parts[i]);
+                }
+                return cleanName.toString();
+            }
+        }
+        return productName;
     }
 
     @Transactional(readOnly = true)
@@ -110,23 +138,38 @@ public class VesselStockStatsService {
                         LinkedHashMap::new,
                         Collectors.toList()));
 
+        Map<ProductPortKey, Double> totalPurchaseIncomingByGroup = toProductPortMap(purchaseRepository.sumIncomingConfirmedByGroup());
+        Map<ProductPortKey, Double> totalIncomingSaleByGroup = toProductPortMap(salesRepository.sumIncomingConfirmedByGroup());
+
+        Set<ProductPortKey> allKeys = new LinkedHashSet<>(byProductPort.keySet());
+        allKeys.addAll(totalPurchaseIncomingByGroup.keySet());
+        allKeys.addAll(totalIncomingSaleByGroup.keySet());
+
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
-        for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
-            List<VesselStockStatsResponse> rows = entry.getValue();
+        for (ProductPortKey key : allKeys) {
+            List<VesselStockStatsResponse> rows = byProductPort.getOrDefault(key, List.of());
             results.add(new ProductStockBreakdownResponse(
-                    entry.getKey().product(), entry.getKey().dischargePort(),
-                    sumField(rows, VesselStockStatsResponse::physicalStockOpening),
-                    sumField(rows, VesselStockStatsResponse::physicalSold),
-                    sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing),
-                    sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening),
-                    sumField(rows, VesselStockStatsResponse::incomingUnsoldNew),
-                    sumField(rows, VesselStockStatsResponse::incomingSold),
-                    sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing),
-                    sumField(rows, VesselStockStatsResponse::totalStock),
+                    key.product(), key.dischargePort(),
+                    round(sumField(rows, VesselStockStatsResponse::physicalStockOpening)),
+                    round(sumField(rows, VesselStockStatsResponse::physicalSold)),
+                    round(sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening)),
+                    round(totalPurchaseIncomingByGroup.getOrDefault(key, 0.0)),
+                    round(totalIncomingSaleByGroup.getOrDefault(key, 0.0)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
+                    round(sumField(rows, VesselStockStatsResponse::totalStock)),
                     joinCompanies(rows)
             ));
         }
         return results;
+    }
+
+    private Map<ProductPortKey, Double> toProductPortMap(List<VesselStockGroupAggregate> rows) {
+        return rows.stream().collect(Collectors.toMap(
+                r -> new ProductPortKey(cleanProductName(r.product()), r.dischargePort()),
+                VesselStockGroupAggregate::total,
+                Double::sum,
+                LinkedHashMap::new));
     }
 
     private String joinCompanies(List<VesselStockStatsResponse> rows) {
@@ -162,10 +205,10 @@ public class VesselStockStatsService {
 
         int upserted = 0;
         for (GroupKey key : groupsWithActivity) {
-            double opening = resolveIncomingOpening(key, today);
-            double incomingNew = incomingNewByGroup.getOrDefault(key, 0.0);
-            double incomingSold = incomingSoldByGroup.getOrDefault(key, 0.0);
-            double closing = opening + incomingNew - incomingSold;
+            double opening = round(resolveIncomingOpening(key, today));
+            double incomingNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
+            double incomingSold = round(incomingSoldByGroup.getOrDefault(key, 0.0));
+            double closing = round(opening + incomingNew - incomingSold);
 
             IncomingUnsoldSnapshot snapshot = snapshotRepository
                     .findBySnapshotDateAndVesselNameAndProductAndPort(today, key.vesselName(), key.product(), key.dischargePort())
@@ -211,7 +254,7 @@ public class VesselStockStatsService {
                 r -> new GroupKey(r.vesselName(), r.product(), r.dischargePort()),
                 LinkedHashMap::new,
                 Collectors.collectingAndThen(
-                        Collectors.mapping(VesselGroupCompany::companyFrom, Collectors.toCollection(LinkedHashSet::new)),
+                        Collectors.mapping(VesselGroupCompany::companyTo, Collectors.toCollection(LinkedHashSet::new)),
                         companies -> String.join(", ", companies))));
     }
 

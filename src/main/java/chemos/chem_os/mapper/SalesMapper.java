@@ -2,8 +2,10 @@ package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
+import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Sales;
+import chemos.chem_os.repository.PortRepository;
 import chemos.chem_os.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,14 +19,28 @@ import java.time.LocalDate;
 public class SalesMapper {
 
     private final ProductRepository productRepository;
+    private final PortRepository portRepository;
 
     private Products resolveProduct(String productId) {
-        if (productId == null) return null;
+        if (productId == null || productId.isBlank()) return null;
         return productRepository.findById(productId)
+            .or(() -> productRepository.findByNameIgnoreCase(productId))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Product not found with id: " + productId
                 ));
+    }
+
+    private Ports resolvePort(String portIdentifier) {
+        if (portIdentifier == null || portIdentifier.isBlank()) {
+            return null;
+        }
+
+        return portRepository.findById(portIdentifier)
+                .or(() -> portRepository.findByDisplayNameIgnoreCase(portIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Port not found: " + portIdentifier));
     }
 
     public Sales toEntity(CreateSaleRequest request) {
@@ -38,7 +54,7 @@ public class SalesMapper {
                 .price(request.price())
                 .payment(request.payment())
                 .deliveryTerm(request.deliveryTerm())
-                .port(request.port())
+                .port(resolvePort(request.port()))
                 .marketPrice(request.marketPrice())
                 .marketStatus(request.marketStatus())
                 .storageDays(request.storageDays())
@@ -61,7 +77,7 @@ public class SalesMapper {
         sale.setPrice(request.price());
         sale.setPayment(request.payment());
         sale.setDeliveryTerm(request.deliveryTerm());
-        sale.setPort(request.port());
+        sale.setPort(resolvePort(request.port()));
         sale.setMarketPrice(request.marketPrice());
         sale.setMarketStatus(request.marketStatus());
         sale.setStorageDays(request.storageDays());

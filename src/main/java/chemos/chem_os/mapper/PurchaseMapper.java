@@ -2,10 +2,7 @@ package chemos.chem_os.mapper;
 
 import chemos.chem_os.dto.CreatePurchaseRequest;
 import chemos.chem_os.dto.UpdatePurchaseRequest;
-import chemos.chem_os.model.Countries;
-import chemos.chem_os.model.Ports;
-import chemos.chem_os.model.Products;
-import chemos.chem_os.model.Purchase;
+import chemos.chem_os.model.*;
 import chemos.chem_os.repository.CountryRepository;
 import chemos.chem_os.repository.PaymentTermRepository;
 import chemos.chem_os.repository.PortRepository;
@@ -117,11 +114,14 @@ public class PurchaseMapper {
                         HttpStatus.BAD_REQUEST, "Product not found: " + productId));
     }
 
-    private Integer resolvePaymentTerm(Integer paymentTermId) {
-        if (paymentTermId == null) return null;
+    private PaymentTerms resolvePaymentTerm(Integer paymentTermId) {
+        if (paymentTermId == null) {
+            return null;
+        }
+
         return paymentTermRepository.findById(paymentTermId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Payment term not found: " + paymentTermId))
-                .getId();
+                        HttpStatus.BAD_REQUEST,
+                        "Payment term not found: " + paymentTermId));
     }
 }

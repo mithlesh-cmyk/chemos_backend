@@ -110,8 +110,9 @@ public class Purchase {
     @Column(name = "price_type")
     private String priceType;
 
-    @Column(name = "payment_term")
-    private Integer paymentTerm;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payment_term")
+    private PaymentTerms paymentTerm;
 
     private LocalDate etd;
 

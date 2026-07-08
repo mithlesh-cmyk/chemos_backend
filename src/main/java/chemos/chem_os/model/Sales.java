@@ -57,8 +57,9 @@ public class Sales {
     @Column(name = "delivery_term")
     private String deliveryTerm;
 
-    @Column(name = "port")
-    private String port;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "port", referencedColumnName = "id")
+    private Ports port;
 
     @Column(name = "market_price")
     private Double marketPrice;
