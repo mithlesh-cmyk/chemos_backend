@@ -16,6 +16,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -55,10 +57,10 @@ public class VesselStockStatsService {
                 .filter(r -> productFilter == null || productFilter.equals(normalize(r.product())))
                 .toList();
 
-        double totalStock = matching.stream().mapToDouble(VesselStockStatsResponse::totalStock).sum();
-        double physicalUnsoldClosing = matching.stream().mapToDouble(VesselStockStatsResponse::physicalUnsoldClosing).sum();
-        double incomingUnsoldClosing = matching.stream().mapToDouble(VesselStockStatsResponse::incomingUnsoldClosing).sum();
-        double incomingSold = matching.stream().mapToDouble(VesselStockStatsResponse::incomingSold).sum();
+        double totalStock = round(matching.stream().mapToDouble(VesselStockStatsResponse::totalStock).sum());
+        double physicalUnsoldClosing = round(matching.stream().mapToDouble(VesselStockStatsResponse::physicalUnsoldClosing).sum());
+        double incomingUnsoldClosing = round(matching.stream().mapToDouble(VesselStockStatsResponse::incomingUnsoldClosing).sum());
+        double incomingSold = round(matching.stream().mapToDouble(VesselStockStatsResponse::incomingSold).sum());
 
         return new VesselStockStatsSummaryResponse(totalStock, physicalUnsoldClosing, incomingUnsoldClosing, incomingSold);
     }
@@ -80,16 +82,16 @@ public class VesselStockStatsService {
 
         List<VesselStockStatsResponse> results = new ArrayList<>();
         for (GroupKey key : allGroups) {
-            double physicalStockOpening = physicalOpeningByGroup.getOrDefault(key, 0.0);
-            double physicalSold = physicalSoldByGroup.getOrDefault(key, 0.0);
-            double physicalUnsoldClosing = physicalStockOpening - physicalSold;
+            double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
+            double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
+            double physicalUnsoldClosing = round(physicalStockOpening - physicalSold);
 
-            double incomingUnsoldOpening = resolveIncomingOpening(key, today);
-            double incomingUnsoldNew = incomingNewByGroup.getOrDefault(key, 0.0);
-            double incomingSold = incomingSoldByGroup.getOrDefault(key, 0.0);
-            double incomingUnsoldClosing = incomingUnsoldOpening + incomingUnsoldNew - incomingSold;
+            double incomingUnsoldOpening = round(resolveIncomingOpening(key, today));
+            double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
+            double incomingSold = round(incomingSoldByGroup.getOrDefault(key, 0.0));
+            double incomingUnsoldClosing = round(incomingUnsoldOpening + incomingUnsoldNew - incomingSold);
 
-            double totalStock = physicalUnsoldClosing + incomingUnsoldClosing;
+            double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
             String companyName = companyByGroup.get(key);
 
             results.add(new VesselStockStatsResponse(
@@ -100,6 +102,10 @@ public class VesselStockStatsService {
             ));
         }
         return results;
+    }
+
+    private static double round(double value) {
+        return BigDecimal.valueOf(value).setScale(3, RoundingMode.HALF_UP).doubleValue();
     }
     
     private String cleanProductName(String productName) {
@@ -144,14 +150,14 @@ public class VesselStockStatsService {
             List<VesselStockStatsResponse> rows = byProductPort.getOrDefault(key, List.of());
             results.add(new ProductStockBreakdownResponse(
                     key.product(), key.dischargePort(),
-                    sumField(rows, VesselStockStatsResponse::physicalStockOpening),
-                    sumField(rows, VesselStockStatsResponse::physicalSold),
-                    sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing),
-                    sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening),
-                    totalPurchaseIncomingByGroup.getOrDefault(key, 0.0),
-                    totalIncomingSaleByGroup.getOrDefault(key, 0.0),
-                    sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing),
-                    sumField(rows, VesselStockStatsResponse::totalStock),
+                    round(sumField(rows, VesselStockStatsResponse::physicalStockOpening)),
+                    round(sumField(rows, VesselStockStatsResponse::physicalSold)),
+                    round(sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening)),
+                    round(totalPurchaseIncomingByGroup.getOrDefault(key, 0.0)),
+                    round(totalIncomingSaleByGroup.getOrDefault(key, 0.0)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
+                    round(sumField(rows, VesselStockStatsResponse::totalStock)),
                     joinCompanies(rows)
             ));
         }
@@ -199,10 +205,10 @@ public class VesselStockStatsService {
 
         int upserted = 0;
         for (GroupKey key : groupsWithActivity) {
-            double opening = resolveIncomingOpening(key, today);
-            double incomingNew = incomingNewByGroup.getOrDefault(key, 0.0);
-            double incomingSold = incomingSoldByGroup.getOrDefault(key, 0.0);
-            double closing = opening + incomingNew - incomingSold;
+            double opening = round(resolveIncomingOpening(key, today));
+            double incomingNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
+            double incomingSold = round(incomingSoldByGroup.getOrDefault(key, 0.0));
+            double closing = round(opening + incomingNew - incomingSold);
 
             IncomingUnsoldSnapshot snapshot = snapshotRepository
                     .findBySnapshotDateAndVesselNameAndProductAndPort(today, key.vesselName(), key.product(), key.dischargePort())
