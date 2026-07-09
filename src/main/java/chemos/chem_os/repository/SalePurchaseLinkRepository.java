@@ -19,13 +19,29 @@ public interface SalePurchaseLinkRepository extends JpaRepository<SalePurchaseLi
 
     /**
      * Total quantity already committed from a given purchase across all sales.
+     * Excludes links whose sale has been cancelled, since a cancelled sale no
+     * longer holds any of the purchase's quantity.
      */
-    @Query("SELECT COALESCE(SUM(l.linkedQuantity), 0) FROM SalePurchaseLink l WHERE l.purchaseId = :purchaseId")
+    @Query("""
+        SELECT COALESCE(SUM(l.linkedQuantity), 0)
+        FROM SalePurchaseLink l
+        JOIN Sales s ON s.id = l.saleId
+        WHERE l.purchaseId = :purchaseId
+          AND s.status.id <> 'CANCELLED'
+        """)
     Double sumLinkedQuantityByPurchaseId(@Param("purchaseId") String purchaseId);
 
     /**
      * Total quantity already fulfilled for a given sale across all purchases.
+     * Excludes links whose purchase has been cancelled, since a cancelled
+     * purchase no longer fulfils any of the sale's quantity.
      */
-    @Query("SELECT COALESCE(SUM(l.linkedQuantity), 0) FROM SalePurchaseLink l WHERE l.saleId = :saleId")
+    @Query("""
+        SELECT COALESCE(SUM(l.linkedQuantity), 0)
+        FROM SalePurchaseLink l
+        JOIN Purchase p ON p.id = l.purchaseId
+        WHERE l.saleId = :saleId
+          AND p.status.id <> 'CANCELLED'
+        """)
     Double sumLinkedQuantityBySaleId(@Param("saleId") String saleId);
 }

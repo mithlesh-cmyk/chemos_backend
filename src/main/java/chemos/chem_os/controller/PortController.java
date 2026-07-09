@@ -1,6 +1,6 @@
 package chemos.chem_os.controller;
 
-
+import chemos.chem_os.dto.ApiSuccessResponse;
 import chemos.chem_os.dto.CreatePortRequest;
 import chemos.chem_os.dto.PortSuggestionResposne;
 import chemos.chem_os.services.PortService;
@@ -20,19 +20,38 @@ public class PortController {
     private final PortService portService;
 
     @GetMapping("/suggestions")
-    public ResponseEntity<Page<PortSuggestionResposne>> getSuggestionPorts(
+    public ResponseEntity<ApiSuccessResponse<Page<PortSuggestionResposne>>> getSuggestionPorts(
             @RequestParam(value = "query", required = false) String query,
             @RequestParam(value = "is_indian", required = false) Boolean isIndian,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        Page<PortSuggestionResposne> responsePage = portService.searchPorts(query, isIndian, pageable);
-        return ResponseEntity.ok(responsePage);
+        Page<PortSuggestionResposne> responsePage =
+                portService.searchPorts(query, isIndian, pageable);
+
+        String message = responsePage.isEmpty()
+                ? "No ports found."
+                : "Ports fetched successfully.";
+
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<Page<PortSuggestionResposne>>builder()
+                        .message(message)
+                        .data(responsePage)
+                        .build()
+        );
     }
 
     @PostMapping("/createPort")
-    public ResponseEntity<PortSuggestionResposne> addCustomPort(@RequestBody CreatePortRequest createPortRequest){
-        PortSuggestionResposne savedPort = portService.createCustomPort(createPortRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedPort);
-    }
+    public ResponseEntity<ApiSuccessResponse<PortSuggestionResposne>> addCustomPort(
+            @RequestBody CreatePortRequest createPortRequest) {
 
+        PortSuggestionResposne savedPort =
+                portService.createCustomPort(createPortRequest);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiSuccessResponse.<PortSuggestionResposne>builder()
+                        .message("Port created successfully.")
+                        .data(savedPort)
+                        .build()
+        );
+    }
 }

@@ -35,7 +35,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'ready'
           AND s.date <= :onDate
-          AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
+          AND s.status.id = 'CONFIRMED'
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumReadyMarketSoldByGroup(@Param("onDate") LocalDate onDate);
@@ -47,7 +47,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'incoming'
           AND s.date = :onDate
-          AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
+          AND s.status.id = 'CONFIRMED'
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldByGroup(@Param("onDate") LocalDate onDate);
@@ -58,7 +58,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         FROM Sales s
         LEFT JOIN s.port port
         WHERE UPPER(TRIM(s.marketStatus)) = 'INCOMING'
-          AND s.status = chemos.chem_os.model.EntryStatus.CONFIRMED
+          AND s.status.id = 'CONFIRMED'
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingConfirmedByGroup();

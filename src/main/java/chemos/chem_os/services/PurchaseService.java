@@ -2,12 +2,13 @@ package chemos.chem_os.services;
 
 import chemos.chem_os.dto.*;
 import chemos.chem_os.mapper.PurchaseMapper;
-import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
+import chemos.chem_os.model.Status;
 import chemos.chem_os.repository.PhysicalStockRepository;
 import chemos.chem_os.repository.PortTransitDaysRepository;
 import chemos.chem_os.repository.PurchaseRepository;
+import chemos.chem_os.repository.StatusRepository;
 import org.springframework.data.jpa.domain.Specification;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
@@ -48,6 +49,7 @@ PurchaseService {
     private final PurchaseMapper purchaseMapper;
     private final AuditLogService auditLogService;
     private final PortTransitDaysRepository portTransitDaysRepository;
+    private final StatusRepository statusRepository;
 
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest) {
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
@@ -57,15 +59,21 @@ PurchaseService {
     }
 
     public Page<Purchase> getAllPurchase(
-            EntryStatus status,
+            String status,
             String product,
             Pageable pageable) {
 
         Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
 
-        if (status != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("status"), status));
+        if (status != null && !status.isBlank()) {
+            String statusFilter = status.trim();
+            spec = spec.and((root, query, cb) -> {
+                var statusJoin = root.join("status", JoinType.LEFT);
+                return cb.or(
+                        cb.equal(cb.upper(statusJoin.get("id")), statusFilter.toUpperCase()),
+                        cb.equal(cb.lower(statusJoin.get("name")), statusFilter.toLowerCase())
+                );
+            });
         }
 
         if (product != null && !product.isBlank()) {
@@ -114,10 +122,44 @@ PurchaseService {
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
                 ));
-        purchase.setStatus(EntryStatus.CONFIRMED);
+        purchase.setStatus(resolveStatus("CONFIRMED"));
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("CONFIRM", "PURCHASE", saved.getId(), null, saved);
         return saved;
+    }
+
+    public Purchase cancelPurchase(String id) {
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase not found with id: " + id
+                ));
+        purchase.setStatus(resolveStatus("CANCELLED"));
+        Purchase saved = purchaseRepository.save(purchase);
+        auditLogService.log("CANCEL", "PURCHASE", saved.getId(), null, saved);
+        return saved;
+    }
+
+    public Purchase unconfirmPurchase(String id) {
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase not found with id: " + id
+                ));
+        if ("UNCONFIRMED".equals(purchase.getStatus().getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Purchase is already unconfirmed");
+        }
+        purchase.setStatus(resolveStatus("UNCONFIRMED"));
+        Purchase saved = purchaseRepository.save(purchase);
+        auditLogService.log("UNCONFIRM", "PURCHASE", saved.getId(), null, saved);
+        return saved;
+    }
+
+    private Status resolveStatus(String statusId) {
+        return statusRepository.findById(statusId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Status not seeded: " + statusId));
     }
 
     public PurchaseComparisonResponse comparePurchases(List<String> purchaseIds) {
@@ -176,7 +218,7 @@ PurchaseService {
 
     @Transactional(readOnly = true)
     public byte[] exportPhysicalStockCsv() {
-        List<Purchase> purchases = purchaseRepository.findByStatus(EntryStatus.CONFIRMED);
+        List<Purchase> purchases = purchaseRepository.findByStatus_Id("CONFIRMED");
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")

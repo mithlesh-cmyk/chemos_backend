@@ -1,12 +1,12 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.*;
-import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,15 +29,25 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_CREATE')")
     @PostMapping("/create/purchase_order")
-    public ResponseEntity<Purchase> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest) {
+    public ResponseEntity<ApiSuccessResponse<Purchase>> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest) {
         Purchase purchase = purchaseService.createPurchase(purchaseRequest);
-        return ResponseEntity.ok(purchase);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiSuccessResponse.<Purchase>builder()
+                        .message("Purchase created successfully.")
+                        .data(purchase)
+                        .build()
+        );
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
+<<<<<<< Updated upstream
     public ResponseEntity<Page<Purchase>> getAllPurchase(
+            @RequestParam(required = false) String status,
+=======
+    public ResponseEntity<ApiSuccessResponse<Page<Purchase>>> getAllPurchase(
             @RequestParam(required = false) EntryStatus status,
+>>>>>>> Stashed changes
             @RequestParam(required = false) String product,
             @PageableDefault(
                     size = 10,
@@ -45,8 +55,18 @@ public class PurchaseController {
                     direction = Sort.Direction.DESC
             ) Pageable pageable) {
 
+        Page<Purchase> purchases =
+                purchaseService.getAllPurchase(status, product, pageable);
+
+        String message = purchases.isEmpty()
+                ? "No purchases found."
+                : "Purchases fetched successfully.";
+
         return ResponseEntity.ok(
-                purchaseService.getAllPurchase(status, product, pageable)
+                ApiSuccessResponse.<Page<Purchase>>builder()
+                        .message(message)
+                        .data(purchases)
+                        .build()
         );
     }
 
@@ -73,6 +93,18 @@ public class PurchaseController {
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<Purchase> confirmPurchase(@PathVariable String id) {
         return ResponseEntity.ok(purchaseService.confirmPurchase(id));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_APPROVE')")
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<Purchase> cancelPurchase(@PathVariable String id) {
+        return ResponseEntity.ok(purchaseService.cancelPurchase(id));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_APPROVE')")
+    @PatchMapping("/{id}/unconfirm")
+    public ResponseEntity<Purchase> unconfirmPurchase(@PathVariable String id) {
+        return ResponseEntity.ok(purchaseService.unconfirmPurchase(id));
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")

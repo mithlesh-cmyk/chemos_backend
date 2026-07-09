@@ -1,5 +1,6 @@
 package chemos.chem_os.controller;
 
+import chemos.chem_os.dto.ApiSuccessResponse;
 import chemos.chem_os.dto.ProductStockBreakdownResponse;
 import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
@@ -23,21 +24,56 @@ public class VesselStockStatsController {
 
     @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")
     @GetMapping
-    public ResponseEntity<List<VesselStockStatsResponse>> getStockStats() {
-        return ResponseEntity.ok(vesselStockStatsService.getStats());
+    public ResponseEntity<ApiSuccessResponse<List<VesselStockStatsResponse>>> getStockStats() {
+
+        List<VesselStockStatsResponse> response =
+                vesselStockStatsService.getStats();
+
+        String message = response.isEmpty()
+                ? "No stock statistics found."
+                : "Stock statistics fetched successfully.";
+
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<List<VesselStockStatsResponse>>builder()
+                        .message(message)
+                        .data(response)
+                        .build()
+        );
     }
 
     @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")
     @GetMapping("/summary")
-    public ResponseEntity<VesselStockStatsSummaryResponse> getStockStatsSummary(
+    public ResponseEntity<ApiSuccessResponse<VesselStockStatsSummaryResponse>> getStockStatsSummary(
             @RequestParam(required = false) String vesselName,
             @RequestParam(required = false) String product) {
-        return ResponseEntity.ok(vesselStockStatsService.getSummary(vesselName, product));
+
+        VesselStockStatsSummaryResponse response =
+                vesselStockStatsService.getSummary(vesselName, product);
+
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<VesselStockStatsSummaryResponse>builder()
+                        .message("Stock statistics summary fetched successfully.")
+                        .data(response)
+                        .build()
+        );
     }
 
     @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")
     @GetMapping("/by-product")
-    public ResponseEntity<List<ProductStockBreakdownResponse>> getStockStatsByProduct() {
-        return ResponseEntity.ok(vesselStockStatsService.getProductBreakdown());
+    public ResponseEntity<ApiSuccessResponse<List<ProductStockBreakdownResponse>>> getStockStatsByProduct() {
+
+        List<ProductStockBreakdownResponse> response =
+                vesselStockStatsService.getProductBreakdown();
+
+        String message = response.isEmpty()
+                ? "No product stock breakdown found."
+                : "Product stock breakdown fetched successfully.";
+
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<List<ProductStockBreakdownResponse>>builder()
+                        .message(message)
+                        .data(response)
+                        .build()
+        );
     }
 }

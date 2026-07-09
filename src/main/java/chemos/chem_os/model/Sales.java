@@ -98,10 +98,9 @@ public class Sales {
     @Column(name = "broker_name")
     private String brokerName;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private EntryStatus status = EntryStatus.UNCONFIRMED;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status", nullable = false)
+    private Status status;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
