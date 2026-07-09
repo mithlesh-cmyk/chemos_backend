@@ -15,7 +15,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CompnayAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleCompanyAlreadyExists(CompnayAlreadyExistsException ex) {
         ApiErrorResponse errorBody = new ApiErrorResponse(
-                HttpStatus.CONFLICT.value(),
                 "Resource Conflict",
                 ex.getMessage(),
                 LocalDateTime.now()
