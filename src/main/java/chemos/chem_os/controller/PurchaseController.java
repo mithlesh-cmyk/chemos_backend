@@ -12,6 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import java.time.LocalDateTime;
 
 import java.util.List;
@@ -32,14 +36,19 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
-    public List<Purchase> getAllPurchase(
+    public ResponseEntity<Page<Purchase>> getAllPurchase(
             @RequestParam(required = false) EntryStatus status,
             @RequestParam(required = false) String product,
-            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
-            @RequestParam(required = false, defaultValue = "desc") String sortDir) {
-        return purchaseService.getAllPurchase(status, product, sortBy, sortDir);
-    }
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable) {
 
+        return ResponseEntity.ok(
+                purchaseService.getAllPurchase(status, product, pageable)
+        );
+    }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/{id}")
