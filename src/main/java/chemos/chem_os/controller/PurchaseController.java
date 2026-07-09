@@ -41,13 +41,8 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
-<<<<<<< Updated upstream
-    public ResponseEntity<Page<Purchase>> getAllPurchase(
-            @RequestParam(required = false) String status,
-=======
     public ResponseEntity<ApiSuccessResponse<Page<Purchase>>> getAllPurchase(
-            @RequestParam(required = false) EntryStatus status,
->>>>>>> Stashed changes
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String product,
             @PageableDefault(
                     size = 10,
