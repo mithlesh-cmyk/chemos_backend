@@ -32,7 +32,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import jakarta.persistence.criteria.JoinType;
 
 import java.util.List;
 
@@ -54,22 +56,35 @@ PurchaseService {
         return saved;
     }
 
-    public List<Purchase> getAllPurchase(EntryStatus status, String product, String sortBy, String sortDir) {
+    public Page<Purchase> getAllPurchase(
+            EntryStatus status,
+            String product,
+            Pageable pageable) {
+
         Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
 
         if (status != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
-        }
-        if (product != null && !product.isBlank()) {
             spec = spec.and((root, query, cb) ->
-                    cb.equal(cb.lower(root.get("product")), product.trim().toLowerCase()));
+                    cb.equal(root.get("status"), status));
         }
 
-        String sortField = (sortBy == null || sortBy.isBlank()) ? "createdAt" : sortBy;
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Sort sort = Sort.by(direction, sortField);
+        if (product != null && !product.isBlank()) {
+            String productFilter = product.trim();
 
-        return purchaseRepository.findAll(spec, sort);
+            spec = spec.and((root, query, cb) -> {
+                var productJoin = root.join("product", JoinType.LEFT);
+
+                return cb.or(
+                        cb.equal(productJoin.get("id"), productFilter),
+                        cb.equal(
+                                cb.lower(productJoin.get("name")),
+                                productFilter.toLowerCase()
+                        )
+                );
+            });
+        }
+
+        return purchaseRepository.findAll(spec, pageable);
     }
 
     public Purchase getPurchaseById(String id) {
