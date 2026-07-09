@@ -1,7 +1,6 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.*;
-import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
@@ -37,7 +36,7 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
     public ResponseEntity<Page<Purchase>> getAllPurchase(
-            @RequestParam(required = false) EntryStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String product,
             @PageableDefault(
                     size = 10,
@@ -73,6 +72,18 @@ public class PurchaseController {
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<Purchase> confirmPurchase(@PathVariable String id) {
         return ResponseEntity.ok(purchaseService.confirmPurchase(id));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_APPROVE')")
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<Purchase> cancelPurchase(@PathVariable String id) {
+        return ResponseEntity.ok(purchaseService.cancelPurchase(id));
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_APPROVE')")
+    @PatchMapping("/{id}/unconfirm")
+    public ResponseEntity<Purchase> unconfirmPurchase(@PathVariable String id) {
+        return ResponseEntity.ok(purchaseService.unconfirmPurchase(id));
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")

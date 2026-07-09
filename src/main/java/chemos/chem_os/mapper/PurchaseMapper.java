@@ -7,6 +7,7 @@ import chemos.chem_os.repository.CountryRepository;
 import chemos.chem_os.repository.PaymentTermRepository;
 import chemos.chem_os.repository.PortRepository;
 import chemos.chem_os.repository.ProductRepository;
+import chemos.chem_os.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ public class PurchaseMapper {
     private final CountryRepository countryRepository;
     private final ProductRepository productRepository;
     private final PaymentTermRepository paymentTermRepository;
+    private final StatusRepository statusRepository;
 
     public Purchase toEntity(CreatePurchaseRequest request) {
 
@@ -55,6 +57,7 @@ public class PurchaseMapper {
                 .paymentTerm(resolvePaymentTerm(request.paymentTerm()))
                 .etd(request.etd())
                 .eta(request.eta())
+                .status(resolveStatus("UNCONFIRMED"))
                 .build();
     }
 
@@ -123,5 +126,12 @@ public class PurchaseMapper {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Payment term not found: " + paymentTermId));
+    }
+
+    private Status resolveStatus(String statusId) {
+        return statusRepository.findById(statusId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Status not seeded: " + statusId));
     }
 }

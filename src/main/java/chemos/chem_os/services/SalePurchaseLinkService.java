@@ -149,23 +149,27 @@ public class SalePurchaseLinkService {
                         "Sale not found with id: " + saleId));
 
         List<SalePurchaseLink> links = linkRepository.findBySaleId(saleId);
-        double totalLinked = links.stream().mapToDouble(SalePurchaseLink::getLinkedQuantity).sum();
-        double remaining = sale.getQuantity() - totalLinked;
 
-        List<SaleLinkSummaryResponse.LinkedPurchaseItem> items = links.stream().map(link -> {
+        List<SaleLinkSummaryResponse.LinkedPurchaseItem> items = new java.util.ArrayList<>();
+        double totalLinked = 0;
+        for (SalePurchaseLink link : links) {
             Purchase purchase = purchaseRepository.findById(link.getPurchaseId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Purchase not found with id: " + link.getPurchaseId()));
+            if (!"CANCELLED".equals(purchase.getStatus().getId())) {
+                totalLinked += link.getLinkedQuantity();
+            }
             double purchaseUsed = linkRepository.sumLinkedQuantityByPurchaseId(link.getPurchaseId());
             double purchaseAvailable = purchase.getQuantity() - purchaseUsed;
-            return new SaleLinkSummaryResponse.LinkedPurchaseItem(
+            items.add(new SaleLinkSummaryResponse.LinkedPurchaseItem(
                     link.getId(),
                     link.getPurchaseId(),
                     link.getLinkedQuantity(),
                     purchase.getQuantity(),
                     purchaseAvailable
-            );
-        }).toList();
+            ));
+        }
+        double remaining = sale.getQuantity() - totalLinked;
 
         return new SaleLinkSummaryResponse(saleId, sale.getQuantity(), totalLinked, remaining, items);
     }
@@ -177,23 +181,27 @@ public class SalePurchaseLinkService {
                         "Purchase not found with id: " + purchaseId));
 
         List<SalePurchaseLink> links = linkRepository.findByPurchaseId(purchaseId);
-        double totalLinked = links.stream().mapToDouble(SalePurchaseLink::getLinkedQuantity).sum();
-        double availableQuantity = purchase.getQuantity() - totalLinked;
 
-        List<PurchaseLinkSummaryResponse.LinkedSaleItem> items = links.stream().map(link -> {
+        List<PurchaseLinkSummaryResponse.LinkedSaleItem> items = new java.util.ArrayList<>();
+        double totalLinked = 0;
+        for (SalePurchaseLink link : links) {
             Sales sale = salesRepository.findById(link.getSaleId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Sale not found with id: " + link.getSaleId()));
+            if (!"CANCELLED".equals(sale.getStatus().getId())) {
+                totalLinked += link.getLinkedQuantity();
+            }
             double saleUsed = linkRepository.sumLinkedQuantityBySaleId(link.getSaleId());
             double saleRemaining = sale.getQuantity() - saleUsed;
-            return new PurchaseLinkSummaryResponse.LinkedSaleItem(
+            items.add(new PurchaseLinkSummaryResponse.LinkedSaleItem(
                     link.getId(),
                     link.getSaleId(),
                     link.getLinkedQuantity(),
                     sale.getQuantity(),
                     saleRemaining
-            );
-        }).toList();
+            ));
+        }
+        double availableQuantity = purchase.getQuantity() - totalLinked;
 
         return new PurchaseLinkSummaryResponse(purchaseId, purchase.getQuantity(), totalLinked, availableQuantity, items);
     }

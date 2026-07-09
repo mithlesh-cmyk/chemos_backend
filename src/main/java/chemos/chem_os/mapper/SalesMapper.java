@@ -6,9 +6,11 @@ import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.model.Salespersons;
+import chemos.chem_os.model.Status;
 import chemos.chem_os.repository.PortRepository;
 import chemos.chem_os.repository.ProductRepository;
 import chemos.chem_os.repository.SalespersonRepository;
+import chemos.chem_os.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ public class SalesMapper {
     private final ProductRepository productRepository;
     private final PortRepository portRepository;
     private final SalespersonRepository salespersonRepository;
+    private final StatusRepository statusRepository;
 
     private Products resolveProduct(String productId) {
         if (productId == null || productId.isBlank()) return null;
@@ -58,6 +61,13 @@ public class SalesMapper {
                         "Salesperson not found: " + salesPersonIdentifier));
     }
 
+    private Status resolveStatus(String statusId) {
+        return statusRepository.findById(statusId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Status not seeded: " + statusId));
+    }
+
     public Sales toEntity(CreateSaleRequest request) {
         return Sales.builder()
                 .date(LocalDate.now())
@@ -82,6 +92,7 @@ public class SalesMapper {
                 .remarks(request.remarks())
                 .salesPerson(resolveSalesperson(request.salesPerson()))
                 .brokerName(request.brokerName())
+                .status(resolveStatus("UNCONFIRMED"))
                 .build();
     }
 

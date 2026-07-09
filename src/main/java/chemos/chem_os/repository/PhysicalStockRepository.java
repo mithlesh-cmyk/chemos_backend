@@ -42,7 +42,7 @@ public interface PhysicalStockRepository extends JpaRepository<PhysicalStock, St
             UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(ps.physicalStock), 0))
         FROM PhysicalStock ps
         JOIN Purchase p ON p.id = ps.purchaseId
-        WHERE p.status = chemos.chem_os.model.EntryStatus.CONFIRMED
+        WHERE p.status.id = 'CONFIRMED'
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
