@@ -4,7 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record SalespersonSuggestionResponse(
-        Long id,
+        String id,
         String name
 ) {
 }

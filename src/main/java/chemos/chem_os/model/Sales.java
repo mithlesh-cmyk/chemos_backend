@@ -91,8 +91,9 @@ public class Sales {
     @Column(columnDefinition = "TEXT")
     private String remarks;
 
-    @Column(name = "sales_person")
-    private String salesPerson;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sales_person")
+    private Salespersons salesPerson;
 
     @Column(name = "broker_name")
     private String brokerName;

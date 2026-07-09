@@ -6,8 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface SalespersonRepository extends JpaRepository<Salespersons, Long> {
+public interface SalespersonRepository extends JpaRepository<Salespersons, String> {
     @Query(value = """
             SELECT *
             FROM salespersons
@@ -16,4 +17,6 @@ public interface SalespersonRepository extends JpaRepository<Salespersons, Long>
             ORDER BY name ASC
             """, nativeQuery = true)
     List<Salespersons> searchSalespersons(@Param("query") String query);
+
+    Optional<Salespersons> findByNameIgnoreCase(String name);
 }
