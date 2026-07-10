@@ -13,8 +13,6 @@ import chemos.chem_os.repository.SalePurchaseLinkRepository;
 import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,6 +27,7 @@ public class SalePurchaseLinkService {
     private final SalesRepository salesRepository;
     private final PurchaseRepository purchaseRepository;
     private final AuditLogService auditLogService;
+    private final CurrentUserService currentUserService;
 
     @Transactional
     public SalePurchaseLinkResponse createLink(CreateSalePurchaseLinkRequest request) {
@@ -65,7 +64,7 @@ public class SalePurchaseLinkService {
         SalePurchaseLink link = SalePurchaseLink.builder()
                 .saleId(request.saleId())
                 .purchaseId(request.purchaseId())
-                .createdByUsername(resolveCurrentUsername())
+                .createdByUsername(currentUserService.getUsername())
                 .linkedQuantity(request.linkedQuantity())
                 .build();
 
@@ -108,6 +107,7 @@ public class SalePurchaseLinkService {
 
         SalePurchaseLink snapshot = link.toBuilder().build();
         link.setLinkedQuantity(request.linkedQuantity());
+        link.setUpdatedBy(currentUserService.getUsername());
         SalePurchaseLink saved = linkRepository.save(link);
         auditLogService.log("UPDATE", "SALE_PURCHASE_LINK", saved.getId(), snapshot, saved);
         return buildResponse(saved, purchase, sale);
@@ -125,7 +125,7 @@ public class SalePurchaseLinkService {
     @Transactional(readOnly = true)
     public List<SalePurchaseLinkResponse> getLinksByUser(String username) {
         String resolvedUsername = (username == null || username.isBlank())
-                ? resolveCurrentUsername()
+                ? currentUserService.getUsername()
                 : username.trim();
 
         List<SalePurchaseLink> links = linkRepository.findByCreatedByUsernameOrderByCreatedAtDesc(resolvedUsername);
@@ -248,17 +248,6 @@ public class SalePurchaseLinkService {
         }
     }
 
-    private String resolveCurrentUsername() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() != null) {
-            String name = auth.getName();
-            if (name != null && !name.isBlank() && !"anonymousUser".equals(name)) {
-                return name;
-            }
-        }
-        return "system";
-    }
-
     /**
      * Builds a {@link SalePurchaseLinkResponse} with up-to-date derived quantities
      * computed after the link has been persisted.
@@ -274,6 +263,7 @@ public class SalePurchaseLinkService {
                 link.getSaleId(),
                 link.getPurchaseId(),
                 link.getCreatedByUsername(),
+                link.getUpdatedBy(),
                 link.getLinkedQuantity(),
                 purchase.getQuantity(),
                 purchaseAvailable,

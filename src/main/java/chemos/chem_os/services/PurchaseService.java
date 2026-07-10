@@ -16,8 +16,6 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,9 +48,13 @@ PurchaseService {
     private final AuditLogService auditLogService;
     private final PortTransitDaysRepository portTransitDaysRepository;
     private final StatusRepository statusRepository;
+    private final CurrentUserService currentUserService;
 
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest) {
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
+        String currentUser = currentUserService.getUsername();
+        purchase.setCreatedBy(currentUser);
+        purchase.setUpdatedBy(currentUser);
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("CREATE", "PURCHASE", saved.getId(), null, saved);
         return saved;
@@ -111,6 +113,7 @@ PurchaseService {
                 ));
         Purchase before = purchase.toBuilder().build();
         purchaseMapper.updateEntity(purchase, updateRequest);
+        purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("UPDATE", "PURCHASE", saved.getId(), before, saved);
         return saved;
@@ -123,6 +126,7 @@ PurchaseService {
                         "Purchase not found with id: " + id
                 ));
         purchase.setStatus(resolveStatus("CONFIRMED"));
+        purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("CONFIRM", "PURCHASE", saved.getId(), null, saved);
         return saved;
@@ -135,6 +139,7 @@ PurchaseService {
                         "Purchase not found with id: " + id
                 ));
         purchase.setStatus(resolveStatus("CANCELLED"));
+        purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("CANCEL", "PURCHASE", saved.getId(), null, saved);
         return saved;
@@ -150,6 +155,7 @@ PurchaseService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Purchase is already unconfirmed");
         }
         purchase.setStatus(resolveStatus("UNCONFIRMED"));
+        purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("UNCONFIRM", "PURCHASE", saved.getId(), null, saved);
         return saved;
@@ -248,8 +254,7 @@ PurchaseService {
         int skipped = 0;
         List<String> errors = new ArrayList<>();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentUser = (auth != null && auth.isAuthenticated()) ? auth.getName() : "system";
+        String currentUser = currentUserService.getUsername();
 
         LocalDateTime sessionTimestamp = LocalDateTime.now();
 

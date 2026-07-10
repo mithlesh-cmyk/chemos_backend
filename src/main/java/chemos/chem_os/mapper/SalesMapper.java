@@ -116,6 +116,5 @@ public class SalesMapper {
         sale.setMessage(request.message());
         sale.setVesselName(request.vesselName());
         sale.setRemarks(request.remarks());
-        sale.setUpdatedAt(java.time.LocalDateTime.now());
     }
 }
