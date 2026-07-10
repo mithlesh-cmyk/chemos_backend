@@ -118,10 +118,9 @@ public class Purchase {
 
     private LocalDate eta;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private EntryStatus status = EntryStatus.UNCONFIRMED;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status", nullable = false)
+    private Status status;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

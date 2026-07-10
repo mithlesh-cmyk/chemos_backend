@@ -5,8 +5,12 @@ import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Ports;
 import chemos.chem_os.model.Products;
 import chemos.chem_os.model.Sales;
+import chemos.chem_os.model.Salespersons;
+import chemos.chem_os.model.Status;
 import chemos.chem_os.repository.PortRepository;
 import chemos.chem_os.repository.ProductRepository;
+import chemos.chem_os.repository.SalespersonRepository;
+import chemos.chem_os.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -20,6 +24,8 @@ public class SalesMapper {
 
     private final ProductRepository productRepository;
     private final PortRepository portRepository;
+    private final SalespersonRepository salespersonRepository;
+    private final StatusRepository statusRepository;
 
     private Products resolveProduct(String productId) {
         if (productId == null || productId.isBlank()) return null;
@@ -41,6 +47,25 @@ public class SalesMapper {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Port not found: " + portIdentifier));
+    }
+
+    private Salespersons resolveSalesperson(String salesPersonIdentifier) {
+        if (salesPersonIdentifier == null || salesPersonIdentifier.isBlank()) {
+            return null;
+        }
+
+        return salespersonRepository.findById(salesPersonIdentifier)
+                .or(() -> salespersonRepository.findByNameIgnoreCase(salesPersonIdentifier))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Salesperson not found: " + salesPersonIdentifier));
+    }
+
+    private Status resolveStatus(String statusId) {
+        return statusRepository.findById(statusId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Status not seeded: " + statusId));
     }
 
     public Sales toEntity(CreateSaleRequest request) {
@@ -65,6 +90,9 @@ public class SalesMapper {
                 .message(request.message())
                 .vesselName(request.vesselName())
                 .remarks(request.remarks())
+                .salesPerson(resolveSalesperson(request.salesPerson()))
+                .brokerName(request.brokerName())
+                .status(resolveStatus("UNCONFIRMED"))
                 .build();
     }
 

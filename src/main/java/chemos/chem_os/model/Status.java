@@ -4,18 +4,16 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "salespersons")
 @Data
+@Table(name = "statuses")
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(toBuilder = true)
+@Builder
+public class Status {
 
-public class Salespersons {
     @Id
-    @Column(nullable = false)
     private String id;
 
-    @Column(nullable= false)
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 }
-

@@ -3,7 +3,6 @@ package chemos.chem_os.controller;
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
-import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class SalesController {
     @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/allSales")
     public ResponseEntity<Page<Sales>> getAllSales(
-            @RequestParam(required = false) EntryStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String product,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(salesService.getAllSales(status, product, pageable));
@@ -58,6 +57,18 @@ public class SalesController {
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<Sales> confirmSale(@PathVariable String id) {
         return ResponseEntity.ok(salesService.confirmSale(id));
+    }
+
+    @PreAuthorize("hasAuthority('SALE_APPROVE')")
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<Sales> cancelSale(@PathVariable String id) {
+        return ResponseEntity.ok(salesService.cancelSale(id));
+    }
+
+    @PreAuthorize("hasAuthority('SALE_APPROVE')")
+    @PatchMapping("/{id}/unconfirm")
+    public ResponseEntity<Sales> unconfirmSale(@PathVariable String id) {
+        return ResponseEntity.ok(salesService.unconfirmSale(id));
     }
 
     @GetMapping("/filter")
