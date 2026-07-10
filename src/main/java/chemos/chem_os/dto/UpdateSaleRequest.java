@@ -22,5 +22,7 @@ public record UpdateSaleRequest(
         String transitTolerance,
         String message,
         String vesselName,
-        String remarks
+        String remarks,
+        String salesPerson,
+        String brokerName
 ) {}

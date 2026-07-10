@@ -28,9 +28,13 @@ public class SalesService {
     private final SalesMapper salesMapper;
     private final AuditLogService auditLogService;
     private final StatusRepository statusRepository;
+    private final CurrentUserService currentUserService;
 
     public Sales createSale(CreateSaleRequest request){
         Sales sales = salesMapper.toEntity(request);
+        String currentUser = currentUserService.getUsername();
+        sales.setCreatedBy(currentUser);
+        sales.setUpdatedBy(currentUser);
         Sales saved = salesRepository.save(sales);
         auditLogService.log("CREATE", "SALE", saved.getId(), null, saved);
         return saved;
@@ -73,6 +77,7 @@ public class SalesService {
         Sales sale = getSaleById(id);
         Sales snapshot = sale.toBuilder().build();
         salesMapper.updateEntity(sale, request);
+        sale.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(sale);
         auditLogService.log("UPDATE", "SALE", saved.getId(), snapshot, saved);
         return saved;
@@ -85,6 +90,7 @@ public class SalesService {
         }
         Sales snapshot = before.toBuilder().build();
         before.setStatus(resolveStatus("CONFIRMED"));
+        before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("CONFIRM", "SALE", saved.getId(), snapshot, saved);
         return saved;
@@ -97,6 +103,7 @@ public class SalesService {
         }
         Sales snapshot = before.toBuilder().build();
         before.setStatus(resolveStatus("CANCELLED"));
+        before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("CANCEL", "SALE", saved.getId(), snapshot, saved);
         return saved;
@@ -109,6 +116,7 @@ public class SalesService {
         }
         Sales snapshot = before.toBuilder().build();
         before.setStatus(resolveStatus("UNCONFIRMED"));
+        before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("UNCONFIRM", "SALE", saved.getId(), snapshot, saved);
         return saved;
