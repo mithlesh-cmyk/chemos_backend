@@ -11,6 +11,7 @@ public record SalePurchaseLinkResponse(
         String saleId,
         String purchaseId,
         String createdByUsername,
+        String updatedBy,
         Double linkedQuantity,
 
         // Purchase context
