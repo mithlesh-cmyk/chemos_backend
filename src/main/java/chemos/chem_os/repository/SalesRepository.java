@@ -51,4 +51,20 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldByGroup(@Param("onDate") LocalDate onDate);
+
+    @Query("""
+        SELECT COALESCE(SUM(s.quantity), 0)
+        FROM Sales s
+        LEFT JOIN s.port port
+        WHERE s.marketStatus = 'incoming'
+          AND s.status.id = 'CONFIRMED'
+          AND UPPER(TRIM(s.vesselName)) = :vesselName
+          AND UPPER(TRIM(s.product.name)) = :product
+          AND UPPER(TRIM(port.displayName)) = :port
+          AND s.date < :beforeDate
+        """)
+    double sumIncomingConfirmedBefore(@Param("vesselName") String vesselName,
+                                       @Param("product") String product,
+                                       @Param("port") String port,
+                                       @Param("beforeDate") LocalDate beforeDate);
 }

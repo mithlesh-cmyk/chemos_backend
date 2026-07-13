@@ -180,11 +180,11 @@ public class VesselStockStatsService {
     @Scheduled(cron = "0 30 0 * * *", zone = "Asia/Kolkata")
     @Transactional
     public void runNightlySnapshot() {
-        LocalDate today = LocalDate.now(BUSINESS_ZONE);
-        log.info("Running incoming-unsold nightly snapshot for {}", today);
+        LocalDate snapshotDate = LocalDate.now(BUSINESS_ZONE).minusDays(1);
+        log.info("Running incoming-unsold nightly snapshot for {}", snapshotDate);
 
-        Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
-        Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
+        Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(snapshotDate));
+        Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(snapshotDate));
 
         Set<GroupKey> groupsWithActivity = new LinkedHashSet<>();
         groupsWithActivity.addAll(incomingNewByGroup.keySet());
@@ -192,15 +192,15 @@ public class VesselStockStatsService {
 
         int upserted = 0;
         for (GroupKey key : groupsWithActivity) {
-            double opening = round(resolveIncomingOpening(key, today));
+            double opening = round(resolveIncomingOpening(key, snapshotDate));
             double incomingNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
             double incomingSold = round(incomingSoldByGroup.getOrDefault(key, 0.0));
             double closing = round(opening + incomingNew - incomingSold);
 
             IncomingUnsoldSnapshot snapshot = snapshotRepository
-                    .findBySnapshotDateAndVesselNameAndProductAndPort(today, key.vesselName(), key.product(), key.dischargePort())
+                    .findBySnapshotDateAndVesselNameAndProductAndPort(snapshotDate, key.vesselName(), key.product(), key.dischargePort())
                     .orElse(IncomingUnsoldSnapshot.builder()
-                            .snapshotDate(today)
+                            .snapshotDate(snapshotDate)
                             .vesselName(key.vesselName())
                             .product(key.product())
                             .port(key.dischargePort())
@@ -216,7 +216,7 @@ public class VesselStockStatsService {
             upserted++;
         }
 
-        auditLogService.log("SNAPSHOT", "INCOMING_UNSOLD_SNAPSHOT", today.toString(), null, upserted);
+        auditLogService.log("SNAPSHOT", "INCOMING_UNSOLD_SNAPSHOT", snapshotDate.toString(), null, upserted);
 
     }
 
@@ -225,7 +225,8 @@ public class VesselStockStatsService {
                 .findTopByVesselNameAndProductAndPortAndSnapshotDateLessThanOrderBySnapshotDateDesc(
                         key.vesselName(), key.product(), key.dischargePort(), today)
                 .map(IncomingUnsoldSnapshot::getIncomingUnsoldClosing)
-                .orElse(0.0);
+                .orElseGet(() -> purchaseRepository.sumIncomingConfirmedBefore(key.vesselName(), key.product(), key.dischargePort(), today)
+                        - salesRepository.sumIncomingConfirmedBefore(key.vesselName(), key.product(), key.dischargePort(), today));
     }
 
     private Map<GroupKey, Double> toMap(List<VesselStockGroupAggregate> rows) {
