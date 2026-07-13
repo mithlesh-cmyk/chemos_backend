@@ -1,7 +1,6 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.*;
-import chemos.chem_os.model.EntryStatus;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
@@ -11,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,11 +29,6 @@ public class PurchaseController {
 
     @PreAuthorize("hasAuthority('PURCHASE_CREATE')")
     @PostMapping("/create/purchase_order")
-<<<<<<< Updated upstream
-    public ResponseEntity<Purchase> createPurchase(@RequestBody CreatePurchaseRequest purchaseRequest) {
-        Purchase purchase = purchaseService.createPurchase(purchaseRequest);
-        return ResponseEntity.ok(purchase);
-=======
     public ResponseEntity<ApiSuccessResponse<Purchase>> createPurchase(
             @RequestBody CreatePurchaseRequest purchaseRequest) {
 
@@ -45,18 +40,11 @@ public class PurchaseController {
                         .data(purchase)
                         .build()
         );
->>>>>>> Stashed changes
     }
-
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
-<<<<<<< Updated upstream
-    public ResponseEntity<Page<Purchase>> getAllPurchase(
-            @RequestParam(required = false) String status,
-=======
     public ResponseEntity<ApiSuccessResponse<Page<Purchase>>> getAllPurchase(
-            @RequestParam(required = false) EntryStatus status,
->>>>>>> Stashed changes
+                    @RequestParam(required = false) String status,
             @RequestParam(required = false) String product,
             @PageableDefault(
                     size = 10,
@@ -64,8 +52,13 @@ public class PurchaseController {
                     direction = Sort.Direction.DESC
             ) Pageable pageable) {
 
+        Page<Purchase> purchases = purchaseService.getAllPurchase(status, product, pageable);
+
         return ResponseEntity.ok(
-                purchaseService.getAllPurchase(status, product, pageable)
+                ApiSuccessResponse.<Page<Purchase>>builder()
+                        .message("Purchases fetched successfully.")
+                        .data(purchases)
+                        .build()
         );
     }
 
