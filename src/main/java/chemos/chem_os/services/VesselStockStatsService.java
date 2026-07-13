@@ -138,39 +138,26 @@ public class VesselStockStatsService {
                         LinkedHashMap::new,
                         Collectors.toList()));
 
-        Map<ProductPortKey, Double> totalPurchaseIncomingByGroup = toProductPortMap(purchaseRepository.sumIncomingConfirmedByGroup());
-        Map<ProductPortKey, Double> totalIncomingSaleByGroup = toProductPortMap(salesRepository.sumIncomingConfirmedByGroup());
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
 
-        Set<ProductPortKey> allKeys = new LinkedHashSet<>(byProductPort.keySet());
-        allKeys.addAll(totalPurchaseIncomingByGroup.keySet());
-        allKeys.addAll(totalIncomingSaleByGroup.keySet());
-
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
-        for (ProductPortKey key : allKeys) {
-            List<VesselStockStatsResponse> rows = byProductPort.getOrDefault(key, List.of());
+        for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
+            ProductPortKey key = entry.getKey();
+            List<VesselStockStatsResponse> rows = entry.getValue();
             results.add(new ProductStockBreakdownResponse(
                     key.product(), key.dischargePort(),
                     round(sumField(rows, VesselStockStatsResponse::physicalStockOpening)),
                     round(sumField(rows, VesselStockStatsResponse::physicalSold)),
                     round(sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing)),
                     round(sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening)),
-                    round(totalPurchaseIncomingByGroup.getOrDefault(key, 0.0)),
-                    round(totalIncomingSaleByGroup.getOrDefault(key, 0.0)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldNew)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingSold)),
                     round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
                     round(sumField(rows, VesselStockStatsResponse::totalStock)),
                     companyByProductPort.getOrDefault(key, "")
             ));
         }
         return results;
-    }
-
-    private Map<ProductPortKey, Double> toProductPortMap(List<VesselStockGroupAggregate> rows) {
-        return rows.stream().collect(Collectors.toMap(
-                r -> new ProductPortKey(cleanProductName(r.product()), r.dischargePort()),
-                VesselStockGroupAggregate::total,
-                Double::sum,
-                LinkedHashMap::new));
     }
 
     private Map<ProductPortKey, String> toProductPortCompanyMap(List<VesselGroupCompany> rows) {

@@ -27,16 +27,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
     List<VesselStockGroupAggregate> sumIncomingNewByGroup(@Param("onDate") LocalDate onDate);
 
     @Query("""
-        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(p.quantity), 0))
-        FROM Purchase p
-        WHERE UPPER(TRIM(p.marketStatus)) = 'INCOMING'
-          AND p.status.id = 'CONFIRMED'
-        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
-        """)
-    List<VesselStockGroupAggregate> sumIncomingConfirmedByGroup();
-
-    @Query("""
         SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
             UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), TRIM(p.companyTo))
         FROM Purchase p
