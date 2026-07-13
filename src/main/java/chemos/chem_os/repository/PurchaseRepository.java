@@ -19,7 +19,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
             UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(p.quantity), 0))
         FROM Purchase p
-        WHERE p.marketStatus = 'Incoming'
+        WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
           AND CAST(p.createdAt AS date) = :onDate
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
@@ -27,14 +27,19 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
     List<VesselStockGroupAggregate> sumIncomingNewByGroup(@Param("onDate") LocalDate onDate);
 
     @Query("""
-        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(p.quantity), 0))
+        SELECT COALESCE(SUM(p.quantity), 0)
         FROM Purchase p
-        WHERE UPPER(TRIM(p.marketStatus)) = 'INCOMING'
+        WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
-        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
+          AND UPPER(TRIM(p.vesselName)) = :vesselName
+          AND UPPER(TRIM(p.product.name)) = :product
+          AND UPPER(TRIM(p.dischargePort.displayName)) = :port
+          AND CAST(p.createdAt AS date) < :beforeDate
         """)
-    List<VesselStockGroupAggregate> sumIncomingConfirmedByGroup();
+    double sumIncomingConfirmedBefore(@Param("vesselName") String vesselName,
+                                       @Param("product") String product,
+                                       @Param("port") String port,
+                                       @Param("beforeDate") LocalDate beforeDate);
 
     @Query("""
         SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
