@@ -140,6 +140,7 @@ public class VesselStockStatsService {
 
         Map<ProductPortKey, Double> totalPurchaseIncomingByGroup = toProductPortMap(purchaseRepository.sumIncomingConfirmedByGroup());
         Map<ProductPortKey, Double> totalIncomingSaleByGroup = toProductPortMap(salesRepository.sumIncomingConfirmedByGroup());
+        Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
 
         Set<ProductPortKey> allKeys = new LinkedHashSet<>(byProductPort.keySet());
         allKeys.addAll(totalPurchaseIncomingByGroup.keySet());
@@ -158,7 +159,7 @@ public class VesselStockStatsService {
                     round(totalIncomingSaleByGroup.getOrDefault(key, 0.0)),
                     round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
                     round(sumField(rows, VesselStockStatsResponse::totalStock)),
-                    joinCompanies(rows)
+                    companyByProductPort.getOrDefault(key, "")
             ));
         }
         return results;
@@ -172,14 +173,13 @@ public class VesselStockStatsService {
                 LinkedHashMap::new));
     }
 
-    private String joinCompanies(List<VesselStockStatsResponse> rows) {
-        return rows.stream()
-                .map(VesselStockStatsResponse::companyName)
-                .filter(c -> c != null && !c.isBlank())
-                .flatMap(c -> java.util.Arrays.stream(c.split(",\\s*")))
-                .collect(Collectors.toCollection(LinkedHashSet::new))
-                .stream()
-                .collect(Collectors.joining(", "));
+    private Map<ProductPortKey, String> toProductPortCompanyMap(List<VesselGroupCompany> rows) {
+        return rows.stream().collect(Collectors.groupingBy(
+                r -> new ProductPortKey(cleanProductName(r.product()), r.dischargePort()),
+                LinkedHashMap::new,
+                Collectors.collectingAndThen(
+                        Collectors.mapping(VesselGroupCompany::companyTo, Collectors.toCollection(LinkedHashSet::new)),
+                        companies -> String.join(", ", companies))));
     }
 
     private double sumField(List<VesselStockStatsResponse> rows, java.util.function.ToDoubleFunction<VesselStockStatsResponse> extractor) {
@@ -230,7 +230,7 @@ public class VesselStockStatsService {
         }
 
         auditLogService.log("SNAPSHOT", "INCOMING_UNSOLD_SNAPSHOT", today.toString(), null, upserted);
-        log.info("Incoming-unsold nightly snapshot complete for {}: {} group(s) upserted", today, upserted);
+
     }
 
     private double resolveIncomingOpening(GroupKey key, LocalDate today) {
