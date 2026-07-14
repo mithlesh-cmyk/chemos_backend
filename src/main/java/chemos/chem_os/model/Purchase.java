@@ -118,7 +118,7 @@ public class Purchase {
 
     private LocalDate eta;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "status", nullable = false)
     private Status status;
 
