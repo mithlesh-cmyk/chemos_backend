@@ -163,4 +163,16 @@ public class PurchaseController {
                 purchaseService.getStockUpdateSessionDetail(user, timestamp)
         );
     }
+
+    @PreAuthorize("hasAuthority('PURCHASE_APPROVE')")
+    @PatchMapping("/{id}/receipt")
+    public ResponseEntity<Purchase> updatePurchaseReceipt(
+            @PathVariable String id,
+            @RequestBody UpdatePurchaseReceiptRequest request) {
+
+        return ResponseEntity.ok(
+                purchaseService.updatePurchaseReceipt(id, request)
+        );
+    }
+
 }
