@@ -19,7 +19,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Entity
-@Table(name = "purchases")
+@Table(name = "purchases", indexes = {
+        @Index(name = "idx_purchases_status_market_status_created_at", columnList = "status, market_status, created_at")
+})
 public class Purchase {
 
     @Id
