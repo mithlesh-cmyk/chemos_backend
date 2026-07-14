@@ -40,4 +40,10 @@ public class VesselStockStatsController {
     public ResponseEntity<List<ProductStockBreakdownResponse>> getStockStatsByProduct() {
         return ResponseEntity.ok(vesselStockStatsService.getProductBreakdown());
     }
+
+    @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")
+    @GetMapping("/by-product/history")
+    public ResponseEntity<List<ProductStockBreakdownResponse>> getStockStatsByProductHistory() {
+        return ResponseEntity.ok(vesselStockStatsService.getProductBreakdownHistorical());
+    }
 }

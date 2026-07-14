@@ -45,12 +45,34 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
         FROM Sales s
         LEFT JOIN s.port port
+        WHERE s.marketStatus = 'ready'
+          AND s.status.id = 'CONFIRMED'
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumReadyMarketSoldAllTimeByGroup();
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
         WHERE s.marketStatus = 'incoming'
           AND s.date = :onDate
           AND s.status.id = 'CONFIRMED'
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldByGroup(@Param("onDate") LocalDate onDate);
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
+        WHERE s.marketStatus = 'incoming'
+          AND s.status.id = 'CONFIRMED'
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumIncomingSoldAllTimeByGroup();
 
     @Query("""
         SELECT COALESCE(SUM(s.quantity), 0)

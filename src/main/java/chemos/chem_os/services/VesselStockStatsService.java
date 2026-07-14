@@ -104,6 +104,73 @@ public class VesselStockStatsService {
         return results;
     }
 
+    private List<VesselStockStatsResponse> computeHistoricalGroupStats() {
+        Map<GroupKey, Double> physicalOpeningByGroup = toMap(physicalStockRepository.sumPhysicalStockOpeningByGroup());
+        Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldAllTimeByGroup());
+        Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingAllTimeByGroup());
+        Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldAllTimeByGroup());
+        Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
+
+        Set<GroupKey> allGroups = new LinkedHashSet<>();
+        allGroups.addAll(physicalOpeningByGroup.keySet());
+        allGroups.addAll(physicalSoldByGroup.keySet());
+        allGroups.addAll(incomingNewByGroup.keySet());
+        allGroups.addAll(incomingSoldByGroup.keySet());
+
+        List<VesselStockStatsResponse> results = new ArrayList<>();
+        for (GroupKey key : allGroups) {
+            double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
+            double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
+            double physicalUnsoldClosing = round(physicalStockOpening - physicalSold);
+
+            double incomingUnsoldOpening = 0.0;
+            double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
+            double incomingSold = round(incomingSoldByGroup.getOrDefault(key, 0.0));
+            double incomingUnsoldClosing = round(incomingUnsoldOpening + incomingUnsoldNew - incomingSold);
+
+            double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
+            String companyName = companyByGroup.get(key);
+
+            results.add(new VesselStockStatsResponse(
+                    key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
+                    physicalStockOpening, physicalSold, physicalUnsoldClosing,
+                    incomingUnsoldOpening, incomingUnsoldNew, incomingSold, incomingUnsoldClosing,
+                    totalStock, companyName
+            ));
+        }
+        return results;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductStockBreakdownResponse> getProductBreakdownHistorical() {
+        Map<ProductPortKey, List<VesselStockStatsResponse>> byProductPort = computeHistoricalGroupStats().stream()
+                .collect(Collectors.groupingBy(
+                        r -> new ProductPortKey(r.product(), r.dischargePort()),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
+
+        List<ProductStockBreakdownResponse> results = new ArrayList<>();
+        for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
+            ProductPortKey key = entry.getKey();
+            List<VesselStockStatsResponse> rows = entry.getValue();
+            results.add(new ProductStockBreakdownResponse(
+                    key.product(), key.dischargePort(),
+                    round(sumField(rows, VesselStockStatsResponse::physicalStockOpening)),
+                    round(sumField(rows, VesselStockStatsResponse::physicalSold)),
+                    round(sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldOpening)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldNew)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingSold)),
+                    round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
+                    round(sumField(rows, VesselStockStatsResponse::totalStock)),
+                    companyByProductPort.getOrDefault(key, "")
+            ));
+        }
+        return results;
+    }
+
     private static double round(double value) {
         return BigDecimal.valueOf(value).setScale(3, RoundingMode.HALF_UP).doubleValue();
     }
