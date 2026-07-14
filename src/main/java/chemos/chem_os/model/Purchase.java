@@ -135,4 +135,10 @@ public class Purchase {
 
     @Column(name = "updated_by")
     private String updatedBy;
+
+    @Column(name = "quantity_received")
+    private Double quantityReceived;
+
+    @Column(name = "pay_due_date")
+    private LocalDate payDueDate;
 }

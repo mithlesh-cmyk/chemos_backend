@@ -119,6 +119,30 @@ PurchaseService {
         return saved;
     }
 
+    public Purchase updatePurchaseReceipt(
+            String id,
+            UpdatePurchaseReceiptRequest request) {
+
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase not found with id: " + id
+                ));
+
+        Purchase before = purchase.toBuilder().build();
+
+        purchase.setQuantityReceived(request.quantityReceived());
+        purchase.setPayDueDate(request.payDueDate());
+
+        purchase.setUpdatedBy(currentUserService.getUsername());
+
+        Purchase saved = purchaseRepository.save(purchase);
+
+        auditLogService.log("UPDATE", "PURCHASE", saved.getId(), before, saved);
+
+        return saved;
+    }
+
     public Purchase confirmPurchase(String id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
