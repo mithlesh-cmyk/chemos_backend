@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -90,6 +91,7 @@ public class SalesService {
         }
         Sales snapshot = before.toBuilder().build();
         before.setStatus(resolveStatus("CONFIRMED"));
+        before.setConfirmedAt(LocalDateTime.now());
         before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("CONFIRM", "SALE", saved.getId(), snapshot, saved);
@@ -116,6 +118,7 @@ public class SalesService {
         }
         Sales snapshot = before.toBuilder().build();
         before.setStatus(resolveStatus("UNCONFIRMED"));
+        before.setConfirmedAt(null);
         before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("UNCONFIRM", "SALE", saved.getId(), snapshot, saved);

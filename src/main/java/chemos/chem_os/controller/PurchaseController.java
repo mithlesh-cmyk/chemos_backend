@@ -68,7 +68,7 @@ public class PurchaseController {
         Purchase purchase = purchaseService.getPurchaseById(id);
         return ResponseEntity.ok(purchase);
     }
-
+    
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @PostMapping("/compare")
     public ResponseEntity<PurchaseComparisonResponse> comparePurchases(
