@@ -27,7 +27,9 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -37,11 +39,13 @@ import jakarta.persistence.criteria.JoinType;
 
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 public class
 PurchaseService {
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
     private final PurchaseRepository purchaseRepository;
     private final PhysicalStockRepository physicalStockRepository;
     private final PurchaseMapper purchaseMapper;
@@ -150,6 +154,7 @@ PurchaseService {
                         "Purchase not found with id: " + id
                 ));
         purchase.setStatus(resolveStatus("CONFIRMED"));
+        purchase.setConfirmedAt(LocalDateTime.now(BUSINESS_ZONE));
         purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("CONFIRM", "PURCHASE", saved.getId(), null, saved);

@@ -21,7 +21,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
-          AND CAST(p.createdAt AS date) = :onDate
+          AND CAST(p.confirmedAt AS date) = :onDate
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingNewByGroup(@Param("onDate") LocalDate onDate);
@@ -44,7 +44,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
           AND UPPER(TRIM(p.vesselName)) = :vesselName
           AND UPPER(TRIM(p.product.name)) = :product
           AND UPPER(TRIM(p.dischargePort.displayName)) = :port
-          AND CAST(p.createdAt AS date) < :beforeDate
+          AND CAST(p.confirmedAt AS date) < :beforeDate
         """)
     double sumIncomingConfirmedBefore(@Param("vesselName") String vesselName,
                                        @Param("product") String product,
