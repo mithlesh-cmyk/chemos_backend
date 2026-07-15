@@ -1,5 +1,6 @@
 package chemos.chem_os.repository;
 
+import chemos.chem_os.dto.VesselGroupCompany;
 import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.model.Sales;
 import org.springframework.data.domain.Page;
@@ -89,4 +90,14 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
                                        @Param("product") String product,
                                        @Param("port") String port,
                                        @Param("beforeDate") LocalDate beforeDate);
+
+    @Query("""
+        SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), TRIM(s.companyFrom))
+        FROM Sales s
+        LEFT JOIN s.port port
+        WHERE s.companyFrom IS NOT NULL
+          AND s.status.id = 'CONFIRMED'
+        """)
+    List<VesselGroupCompany> findCompanyFromByGroup();
 }
