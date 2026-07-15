@@ -82,7 +82,7 @@ public class PurchaseMapper {
         if (request.replacementCost() != null) purchase.setReplacementCost(request.replacementCost());
         if (request.make() != null) purchase.setMake(request.make());
         if (request.packaging() != null) purchase.setPackaging(request.packaging());
-        if (request.origin() != null) purchase.setOrigin(resolveCountry(request.origin()));
+        if (request.origin() != null && !request.origin().isBlank()) purchase.setOrigin(resolveCountry(request.origin()));
         if (request.expense() != null) purchase.setExpense(request.expense());
         if (request.customDuty() != null) purchase.setCustomDuty(request.customDuty());
         if (request.sws() != null) purchase.setSws(request.sws());
