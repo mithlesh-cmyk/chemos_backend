@@ -73,6 +73,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
+        Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -92,7 +93,7 @@ public class VesselStockStatsService {
             double incomingUnsoldClosing = round(incomingUnsoldOpening + incomingUnsoldNew - incomingSold);
 
             double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
-            String companyName = companyByGroup.get(key);
+            String companyName = companyByGroup.getOrDefault(key, salesCompanyByGroup.get(key));
 
             results.add(new VesselStockStatsResponse(
                     key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
@@ -110,6 +111,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingAllTimeByGroup());
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldAllTimeByGroup());
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
+        Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -129,7 +131,7 @@ public class VesselStockStatsService {
             double incomingUnsoldClosing = round(incomingUnsoldOpening + incomingUnsoldNew - incomingSold);
 
             double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
-            String companyName = companyByGroup.get(key);
+            String companyName = companyByGroup.getOrDefault(key, salesCompanyByGroup.get(key));
 
             results.add(new VesselStockStatsResponse(
                     key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
@@ -150,6 +152,7 @@ public class VesselStockStatsService {
                         Collectors.toList()));
 
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
+        Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
         for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
@@ -165,7 +168,7 @@ public class VesselStockStatsService {
                     round(sumField(rows, VesselStockStatsResponse::incomingSold)),
                     round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
                     round(sumField(rows, VesselStockStatsResponse::totalStock)),
-                    companyByProductPort.getOrDefault(key, "")
+                    companyByProductPort.getOrDefault(key, salesCompanyByProductPort.getOrDefault(key, ""))
             ));
         }
         return results;
@@ -206,6 +209,7 @@ public class VesselStockStatsService {
                         Collectors.toList()));
 
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
+        Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
         for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
@@ -221,7 +225,7 @@ public class VesselStockStatsService {
                     round(sumField(rows, VesselStockStatsResponse::incomingSold)),
                     round(sumField(rows, VesselStockStatsResponse::incomingUnsoldClosing)),
                     round(sumField(rows, VesselStockStatsResponse::totalStock)),
-                    companyByProductPort.getOrDefault(key, "")
+                    companyByProductPort.getOrDefault(key, salesCompanyByProductPort.getOrDefault(key, ""))
             ));
         }
         return results;
