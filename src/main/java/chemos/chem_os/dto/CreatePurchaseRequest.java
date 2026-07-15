@@ -1,6 +1,8 @@
 package chemos.chem_os.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -8,14 +10,17 @@ import java.time.LocalDate;
 public record CreatePurchaseRequest(
 
         @JsonProperty("company_to")
+        @NotBlank(message = "companyTo is required")
         String companyTo,
 
         @JsonProperty("purchase_type")
         String purchaseType,
 
         @JsonProperty("company_from")
+        @NotBlank(message = "companyFrom is required")
         String companyFrom,
 
+        @NotBlank(message = "product is required")
         String product,
 
         @JsonProperty("vessel_name")
@@ -23,6 +28,7 @@ public record CreatePurchaseRequest(
 
         String shipment,
 
+        @NotNull(message = "quantity is required")
         Double quantity,
 
         String currency,
@@ -42,6 +48,7 @@ public record CreatePurchaseRequest(
         @JsonProperty("payment_days")
         Integer paymentDays,
 
+        @NotBlank(message = "port is required")
         String port,
 
         @JsonProperty("market_status")
@@ -60,6 +67,7 @@ public record CreatePurchaseRequest(
 
         String packaging,
 
+        @NotBlank(message = "origin is required")
         String origin,
 
         BigDecimal expense,
