@@ -4,6 +4,7 @@ import chemos.chem_os.dto.*;
 import chemos.chem_os.model.PhysicalStock;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.services.PurchaseService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +31,7 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_CREATE')")
     @PostMapping("/create/purchase_order")
     public ResponseEntity<ApiSuccessResponse<Purchase>> createPurchase(
-            @RequestBody CreatePurchaseRequest purchaseRequest) {
+            @Valid @RequestBody CreatePurchaseRequest purchaseRequest) {
 
         Purchase purchase = purchaseService.createPurchase(purchaseRequest);
 
