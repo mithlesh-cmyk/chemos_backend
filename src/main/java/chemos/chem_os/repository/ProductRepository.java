@@ -14,43 +14,73 @@ public interface ProductRepository extends JpaRepository<Products, String> {
     Optional<Products> findByNameIgnoreCase(String name);
 
     @Query(value = """
-    SELECT *
-    FROM products p
-    WHERE p.is_active = true
-      AND (
-          -- If query is empty, return everything. Otherwise, evaluate search conditions.
-          :query = ''
-          OR similarity(LOWER(p.name), LOWER(:query)) > 0.2
-          OR LOWER(p.hs_code) LIKE LOWER(CONCAT('%', :query, '%'))
-          OR LOWER(p.cas_no) LIKE LOWER(CONCAT('%', :query, '%'))
-      )
-    ORDER BY
-        -- 1. Handle ordering when there is no query
-        CASE
-            WHEN :query = '' THEN 1
-            WHEN LOWER(p.name) = LOWER(:query) THEN 1
-            WHEN LOWER(p.name) LIKE LOWER(CONCAT(:query, '%')) THEN 2
-            ELSE 3
-        END,
-        -- 2. Similarity score ordering (only relevant when query is present)
-        CASE
-            WHEN :query = '' THEN 0
-            ELSE similarity(LOWER(p.name), LOWER(:query))
-        END DESC,
-        -- 3. Alphabetical fallback
-        p.name ASC
-    """,
+        SELECT *
+        FROM products p
+        WHERE p.is_active = true
+          AND (
+                :query = ''
+
+                OR LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%'))
+
+                OR LOWER(p.hs_code) LIKE LOWER(CONCAT('%', :query, '%'))
+
+                OR LOWER(p.cas_no) LIKE LOWER(CONCAT('%', :query, '%'))
+
+                OR similarity(LOWER(p.name), LOWER(:query)) > 0.18
+          )
+
+        ORDER BY
+
+            CASE
+
+                -- Exact name
+                WHEN LOWER(p.name) = LOWER(:query) THEN 1
+
+                -- Exact HS Code
+                WHEN LOWER(p.hs_code) = LOWER(:query) THEN 2
+
+                -- Exact CAS No
+                WHEN LOWER(p.cas_no) = LOWER(:query) THEN 3
+
+                -- Starts with
+                WHEN LOWER(p.name) LIKE LOWER(CONCAT(:query, '%')) THEN 4
+                -- Word starts
+                WHEN LOWER(p.name) LIKE LOWER(CONCAT('% ', :query, '%')) THEN 5
+
+                -- Acronym (MEA, MX, OX...)
+                WHEN LOWER(p.name) LIKE LOWER(CONCAT('%(', :query, ')%')) THEN 6
+
+                -- Contains
+                WHEN LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) THEN 7
+
+                ELSE 8
+
+            END,
+
+            similarity(
+                LOWER(p.name),
+                LOWER(:query)
+            ) DESC,
+
+            LOWER(p.name) ASC
+        """,
+
             countQuery = """
-    SELECT COUNT(*)
-    FROM products p
-    WHERE p.is_active = true
-      AND (
-          :query = ''
-          OR similarity(LOWER(p.name), LOWER(:query)) > 0.2
-          OR LOWER(p.hs_code) LIKE LOWER(CONCAT('%', :query, '%'))
-          OR LOWER(p.cas_no) LIKE LOWER(CONCAT('%', :query, '%'))
-      )
-    """,
+        SELECT COUNT(*)
+        FROM products p
+        WHERE p.is_active = true
+          AND (
+                :query = ''
+                OR LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(p.hs_code) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(p.cas_no) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR similarity(LOWER(p.name), LOWER(:query)) > 0.18
+          )
+        """,
+
             nativeQuery = true)
-    Page<Products> searchProducts(@Param("query") String query, Pageable pageable);
+    Page<Products> searchProducts(
+            @Param("query") String query,
+            Pageable pageable
+    );
 }

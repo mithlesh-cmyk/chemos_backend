@@ -20,16 +20,25 @@ public interface CompanyRepository extends JpaRepository<Companies, String> {
         SELECT *
         FROM companies
         WHERE
-            -- Shortcut: If query input string is empty, fetch everything instantly
-            :prefix = '' 
+            :prefix = ''
             OR search_key LIKE CONCAT('%', :prefix, '%')
-        ORDER BY 
-            CASE 
-                -- 1. Highest priority: Company name starts with user text
-                WHEN search_key LIKE CONCAT(:prefix, '%') THEN 1
-                -- 2. Lower priority: Text matches somewhere in the middle
-                ELSE 2
+            OR similarity(search_key, :prefix) > 0.2
+        ORDER BY
+            CASE
+                -- 1. Exact match
+                WHEN search_key = :prefix THEN 1
+                -- 2. Starts with query
+                WHEN search_key LIKE CONCAT(:prefix, '%') THEN 2
+                -- 3. Any word inside starts with query
+                WHEN search_key LIKE CONCAT('% ', :prefix, '%') THEN 3
+                -- 4. Acronym in brackets, e.g. "(india)"
+                WHEN search_key LIKE CONCAT('%(', :prefix, '%') THEN 4
+                -- 5. Contains anywhere
+                WHEN search_key LIKE CONCAT('%', :prefix, '%') THEN 5
+                -- 6. Only reached via fuzzy similarity (typo)
+                ELSE 6
             END,
+            similarity(search_key, :prefix) DESC,
             display_name ASC
         LIMIT :limit
         """,
