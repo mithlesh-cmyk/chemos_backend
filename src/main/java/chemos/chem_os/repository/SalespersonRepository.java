@@ -14,14 +14,16 @@ public interface SalespersonRepository extends JpaRepository<Salespersons, Strin
     FROM salespersons
     WHERE
         :query = ''
-        OR similarity(LOWER(name), LOWER(:query)) > 0.2
         OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR similarity(LOWER(name), LOWER(:query)) > 0.25
     ORDER BY
         CASE
             WHEN :query = '' THEN 1
             WHEN LOWER(name) = LOWER(:query) THEN 1
             WHEN LOWER(name) LIKE LOWER(CONCAT(:query, '%')) THEN 2
-            ELSE 3
+            WHEN LOWER(name) LIKE LOWER(CONCAT('% ', :query, '%')) THEN 3
+            WHEN LOWER(name) LIKE LOWER(CONCAT('%', :query, '%')) THEN 4
+            ELSE 5
         END,
         CASE
             WHEN :query = '' THEN 0

@@ -18,14 +18,21 @@ public interface PortRepository extends JpaRepository<Ports, String> {
             :query = ''
             OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
             OR LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR similarity(search_key, LOWER(:query)) > 0.2
         )
     ORDER BY
         CASE
             WHEN :query = '' THEN 1
-            WHEN search_key LIKE LOWER(CONCAT(:query, '%')) THEN 1
-            WHEN LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT(:query, '%')) THEN 2
-            ELSE 3
+            WHEN LOWER(COALESCE(locode, '')) = LOWER(:query) THEN 1
+            WHEN search_key = LOWER(:query) THEN 1
+            WHEN search_key LIKE LOWER(CONCAT(:query, '%')) THEN 2
+            WHEN LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT(:query, '%')) THEN 3
+            WHEN search_key LIKE LOWER(CONCAT('% ', :query, '%')) THEN 4
+            WHEN search_key LIKE LOWER(CONCAT('%(', :query, '%')) THEN 5
+            WHEN search_key LIKE LOWER(CONCAT('%', :query, '%')) THEN 6
+            ELSE 7
         END,
+        similarity(search_key, LOWER(:query)) DESC,
         display_name ASC
     """,
             countQuery = """
@@ -37,6 +44,7 @@ public interface PortRepository extends JpaRepository<Ports, String> {
             :query = ''
             OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
             OR LOWER(COALESCE(locode, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR similarity(search_key, LOWER(:query)) > 0.2
         )
     """,
             nativeQuery = true)

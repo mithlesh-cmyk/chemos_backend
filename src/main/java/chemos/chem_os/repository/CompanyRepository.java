@@ -22,7 +22,7 @@ public interface CompanyRepository extends JpaRepository<Companies, String> {
         WHERE
             :prefix = ''
             OR search_key LIKE CONCAT('%', :prefix, '%')
-            OR similarity(search_key, :prefix) > 0.2
+            OR similarity(search_key, :prefix) > 0.25
         ORDER BY
             CASE
                 -- 1. Exact match

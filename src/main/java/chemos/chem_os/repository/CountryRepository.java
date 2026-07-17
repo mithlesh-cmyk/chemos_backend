@@ -17,27 +17,30 @@ public interface CountryRepository extends JpaRepository<Countries, String> {
     SELECT *
     FROM countries
     WHERE
-        -- Short-circuit: If query is blank, skip filter validation and grab everything
         :query = ''
         OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
+        OR similarity(search_key, LOWER(:query)) > 0.25
     ORDER BY
         CASE
-            -- If query is empty, treat all rows with equal relevance priority
             WHEN :query = '' THEN 1
-            -- If user typed something, prioritize prefix matches
-            WHEN search_key LIKE LOWER(CONCAT(:query, '%')) THEN 1
-            ELSE 2
+            WHEN search_key = LOWER(:query) THEN 1
+            WHEN search_key LIKE LOWER(CONCAT(:query, '%')) THEN 2
+            WHEN search_key LIKE LOWER(CONCAT('% ', :query, '%')) THEN 3
+            WHEN search_key LIKE LOWER(CONCAT('%(', :query, '%')) THEN 4
+            WHEN search_key LIKE LOWER(CONCAT('%', :query, '%')) THEN 5
+            ELSE 6
         END,
+        similarity(search_key, LOWER(:query)) DESC,
         display_name ASC
     """,
             countQuery = """
     SELECT COUNT(*)
     FROM countries
-    WHERE :query = ''
-       OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
+    WHERE
+        :query = ''
+        OR search_key LIKE LOWER(CONCAT('%', :query, '%'))
+        OR similarity(search_key, LOWER(:query)) > 0.25
     """,
             nativeQuery = true)
     Page<Countries> searchCountries(@Param("query") String query, Pageable pageable);
 }
-
-
