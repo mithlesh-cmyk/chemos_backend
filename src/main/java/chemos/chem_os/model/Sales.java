@@ -19,7 +19,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Entity
-@Table(name = "sales_form")
+@Table(name = "sales_form", indexes = {
+        @Index(name = "idx_sales_form_status_market_status_date", columnList = "status, market_status, date")
+})
 public class Sales {
 
     @Id
@@ -112,4 +114,7 @@ public class Sales {
 
     @Column(name = "updated_by")
     private String updatedBy;
+
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
 }

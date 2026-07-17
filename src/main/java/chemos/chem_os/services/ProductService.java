@@ -19,11 +19,17 @@ public class ProductService {
     private final ProductMapper productMapper;
 
     public Page<ProductDropdownResponse> searchProducts(String query, int page, int size) {
-        String cleanQuery = (query == null || query.trim().isEmpty())
-                ? ""
-                : query.trim().replaceAll("\\s+", " ");
 
-        Page<Products> productsPage = productRepository.searchProducts(cleanQuery, PageRequest.of(page, size));
+        String cleanQuery = (query == null)
+                ? ""
+                : query.trim().replaceAll("\\s+", " ").toLowerCase();
+
+        Page<Products> productsPage =
+                productRepository.searchProducts(
+                        cleanQuery,
+                        PageRequest.of(page, size)
+                );
+
         return productsPage.map(productMapper::toDropDownResponse);
     }
 }

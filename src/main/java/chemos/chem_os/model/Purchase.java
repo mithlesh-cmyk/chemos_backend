@@ -19,7 +19,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Entity
-@Table(name = "purchases")
+@Table(name = "purchases", indexes = {
+        @Index(name = "idx_purchases_status_market_status_created_at", columnList = "status, market_status, created_at")
+})
 public class Purchase {
 
     @Id
@@ -118,7 +120,7 @@ public class Purchase {
 
     private LocalDate eta;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "status", nullable = false)
     private Status status;
 
@@ -135,4 +137,13 @@ public class Purchase {
 
     @Column(name = "updated_by")
     private String updatedBy;
+
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
+
+    @Column(name = "quantity_received")
+    private Double quantityReceived;
+
+    @Column(name = "pay_due_date")
+    private LocalDate payDueDate;
 }

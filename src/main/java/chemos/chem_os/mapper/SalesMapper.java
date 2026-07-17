@@ -70,7 +70,7 @@ public class SalesMapper {
 
     public Sales toEntity(CreateSaleRequest request) {
         return Sales.builder()
-                .date(LocalDate.now())
+                .date(request.date() != null ? request.date() : LocalDate.now())
                 .salesType(request.salesType())
                 .companyFrom(request.companyFrom())
                 .companyTo(request.companyTo())

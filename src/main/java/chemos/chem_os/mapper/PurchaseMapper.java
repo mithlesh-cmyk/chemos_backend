@@ -62,37 +62,37 @@ public class PurchaseMapper {
     }
 
     public void updateEntity(Purchase purchase, UpdatePurchaseRequest request) {
-        purchase.setCompanyTo(request.companyTo());
-        purchase.setPurchaseType(request.purchaseType());
-        purchase.setCompanyFrom(request.companyFrom());
-        purchase.setProduct(resolveProduct(request.product()));
-        purchase.setVesselName(request.vesselName());
-        purchase.setShipment(request.shipment());
-        purchase.setQuantity(request.quantity());
-        purchase.setPriceFc(request.priceFc());
-        purchase.setCurrency(request.currency());
-        purchase.setOfferUsd(request.offerUsd());
-        purchase.setExchangeRate(request.exchangeRate());
-        purchase.setPriceInr(request.priceInr());
-        purchase.setDeliveryTerm(request.deliveryTerm());
-        purchase.setPaymentDays(request.paymentDays());
-        purchase.setPort(resolvePort(request.port()));
-        purchase.setMarketPrice(request.marketPrice());
-        purchase.setMarketStatus(request.marketStatus());
-        purchase.setReplacementCost(request.replacementCost());
-        purchase.setMake(request.make());
-        purchase.setPackaging(request.packaging());
-        purchase.setOrigin(resolveCountry(request.origin()));
-        purchase.setExpense(request.expense());
-        purchase.setCustomDuty(request.customDuty());
-        purchase.setSws(request.sws());
-        purchase.setAdd(request.add());
-        purchase.setOtherExpense(request.otherExpense());
-        purchase.setDischargePort(resolvePort(request.dischargePorts()));
-        purchase.setPriceType(request.priceType());
-        purchase.setPaymentTerm(resolvePaymentTerm(request.paymentTerm()));
-        purchase.setEtd(request.etd());
-        purchase.setEta(request.eta());
+        if (request.companyTo() != null) purchase.setCompanyTo(request.companyTo());
+        if (request.purchaseType() != null) purchase.setPurchaseType(request.purchaseType());
+        if (request.companyFrom() != null) purchase.setCompanyFrom(request.companyFrom());
+        if (request.product() != null) purchase.setProduct(resolveProduct(request.product()));
+        if (request.vesselName() != null) purchase.setVesselName(request.vesselName());
+        if (request.shipment() != null) purchase.setShipment(request.shipment());
+        if (request.quantity() != null) purchase.setQuantity(request.quantity());
+        if (request.priceFc() != null) purchase.setPriceFc(request.priceFc());
+        if (request.currency() != null) purchase.setCurrency(request.currency());
+        if (request.offerUsd() != null) purchase.setOfferUsd(request.offerUsd());
+        if (request.exchangeRate() != null) purchase.setExchangeRate(request.exchangeRate());
+        if (request.priceInr() != null) purchase.setPriceInr(request.priceInr());
+        if (request.deliveryTerm() != null) purchase.setDeliveryTerm(request.deliveryTerm());
+        if (request.paymentDays() != null) purchase.setPaymentDays(request.paymentDays());
+        if (request.port() != null) purchase.setPort(resolvePort(request.port()));
+        if (request.marketPrice() != null) purchase.setMarketPrice(request.marketPrice());
+        if (request.marketStatus() != null) purchase.setMarketStatus(request.marketStatus());
+        if (request.replacementCost() != null) purchase.setReplacementCost(request.replacementCost());
+        if (request.make() != null) purchase.setMake(request.make());
+        if (request.packaging() != null) purchase.setPackaging(request.packaging());
+        if (request.origin() != null && !request.origin().isBlank()) purchase.setOrigin(resolveCountry(request.origin()));
+        if (request.expense() != null) purchase.setExpense(request.expense());
+        if (request.customDuty() != null) purchase.setCustomDuty(request.customDuty());
+        if (request.sws() != null) purchase.setSws(request.sws());
+        if (request.add() != null) purchase.setAdd(request.add());
+        if (request.otherExpense() != null) purchase.setOtherExpense(request.otherExpense());
+        if (request.dischargePorts() != null) purchase.setDischargePort(resolvePort(request.dischargePorts()));
+        if (request.priceType() != null) purchase.setPriceType(request.priceType());
+        if (request.paymentTerm() != null) purchase.setPaymentTerm(resolvePaymentTerm(request.paymentTerm()));
+        if (request.etd() != null) purchase.setEtd(request.etd());
+        if (request.eta() != null) purchase.setEta(request.eta());
     }
 
     private Ports resolvePort(String portIdentifier) {

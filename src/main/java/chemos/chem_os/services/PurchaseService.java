@@ -27,7 +27,9 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -37,11 +39,13 @@ import jakarta.persistence.criteria.JoinType;
 
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 public class
 PurchaseService {
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
     private final PurchaseRepository purchaseRepository;
     private final PhysicalStockRepository physicalStockRepository;
     private final PurchaseMapper purchaseMapper;
@@ -119,6 +123,30 @@ PurchaseService {
         return saved;
     }
 
+    public Purchase updatePurchaseReceipt(
+            String id,
+            UpdatePurchaseReceiptRequest request) {
+
+        Purchase purchase = purchaseRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase not found with id: " + id
+                ));
+
+        Purchase before = purchase.toBuilder().build();
+
+        purchase.setQuantityReceived(request.quantityReceived());
+        purchase.setPayDueDate(request.payDueDate());
+
+        purchase.setUpdatedBy(currentUserService.getUsername());
+
+        Purchase saved = purchaseRepository.save(purchase);
+
+        auditLogService.log("UPDATE", "PURCHASE", saved.getId(), before, saved);
+
+        return saved;
+    }
+
     public Purchase confirmPurchase(String id) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -126,6 +154,7 @@ PurchaseService {
                         "Purchase not found with id: " + id
                 ));
         purchase.setStatus(resolveStatus("CONFIRMED"));
+        purchase.setConfirmedAt(LocalDateTime.now(BUSINESS_ZONE));
         purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
         auditLogService.log("CONFIRM", "PURCHASE", saved.getId(), null, saved);
