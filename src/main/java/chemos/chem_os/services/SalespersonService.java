@@ -21,7 +21,7 @@ public class SalespersonService {
     @Transactional(readOnly = true)
     public List<SalespersonSuggestionResponse> searchSalespersons(String query) {
 
-        String cleanQuery = (query == null) ? "" : query.trim();
+        String cleanQuery = (query == null) ? "" : query.trim().toLowerCase();
 
         return salespersonRepository.searchSalespersons(cleanQuery)
                 .stream()
