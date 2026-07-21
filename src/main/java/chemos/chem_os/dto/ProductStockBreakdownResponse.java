@@ -3,6 +3,7 @@ package chemos.chem_os.dto;
 public record ProductStockBreakdownResponse(
         String product,
         String dischargePort,
+        Double physicalReady,
         Double physicalStock,
         Double physicalSold,
         Double physicalUnsold,
@@ -12,5 +13,6 @@ public record ProductStockBreakdownResponse(
         Double incomingBalance,
         Double totalStock,
         String companyName
+
 ) {
 }

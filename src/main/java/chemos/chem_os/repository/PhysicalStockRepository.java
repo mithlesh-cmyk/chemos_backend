@@ -45,5 +45,6 @@ public interface PhysicalStockRepository extends JpaRepository<PhysicalStock, St
         WHERE p.status.id = 'CONFIRMED'
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
-    List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
+
+      List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
 }

@@ -154,12 +154,23 @@ public class VesselStockStatsService {
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
+        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
+        Map<ProductPortKey, Double> physicalReadyByProductPort = physicalReadyByGroup.entrySet().stream()
+                .collect(Collectors.groupingBy(
+                        e -> new ProductPortKey(cleanProductName(e.getKey().product()), e.getKey().dischargePort()),
+                        LinkedHashMap::new,
+                        Collectors.summingDouble(Map.Entry::getValue)));
+
+        Set<ProductPortKey> allKeys = new LinkedHashSet<>();
+        allKeys.addAll(byProductPort.keySet());
+        allKeys.addAll(physicalReadyByProductPort.keySet());
+
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
-        for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
-            ProductPortKey key = entry.getKey();
-            List<VesselStockStatsResponse> rows = entry.getValue();
+        for (ProductPortKey key : allKeys) {
+            List<VesselStockStatsResponse> rows = byProductPort.getOrDefault(key, List.of());
             results.add(new ProductStockBreakdownResponse(
                     key.product(), key.dischargePort(),
+                    round(physicalReadyByProductPort.getOrDefault(key, 0.0)),
                     round(sumField(rows, VesselStockStatsResponse::physicalStockOpening)),
                     round(sumField(rows, VesselStockStatsResponse::physicalSold)),
                     round(sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing)),
@@ -177,7 +188,7 @@ public class VesselStockStatsService {
     private static double round(double value) {
         return BigDecimal.valueOf(value).setScale(3, RoundingMode.HALF_UP).doubleValue();
     }
-    
+
     private String cleanProductName(String productName) {
         if (productName == null || productName.isBlank()) {
             return productName;
@@ -211,12 +222,23 @@ public class VesselStockStatsService {
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
+        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
+        Map<ProductPortKey, Double> physicalReadyByProductPort = physicalReadyByGroup.entrySet().stream()
+                .collect(Collectors.groupingBy(
+                        e -> new ProductPortKey(cleanProductName(e.getKey().product()), e.getKey().dischargePort()),
+                        LinkedHashMap::new,
+                        Collectors.summingDouble(Map.Entry::getValue)));
+
+        Set<ProductPortKey> allKeys = new LinkedHashSet<>();
+        allKeys.addAll(byProductPort.keySet());
+        allKeys.addAll(physicalReadyByProductPort.keySet());
+
         List<ProductStockBreakdownResponse> results = new ArrayList<>();
-        for (Map.Entry<ProductPortKey, List<VesselStockStatsResponse>> entry : byProductPort.entrySet()) {
-            ProductPortKey key = entry.getKey();
-            List<VesselStockStatsResponse> rows = entry.getValue();
+        for (ProductPortKey key : allKeys) {
+            List<VesselStockStatsResponse> rows = byProductPort.getOrDefault(key, List.of());
             results.add(new ProductStockBreakdownResponse(
                     key.product(), key.dischargePort(),
+                    round(physicalReadyByProductPort.getOrDefault(key, 0.0)),
                     round(sumField(rows, VesselStockStatsResponse::physicalStockOpening)),
                     round(sumField(rows, VesselStockStatsResponse::physicalSold)),
                     round(sumField(rows, VesselStockStatsResponse::physicalUnsoldClosing)),

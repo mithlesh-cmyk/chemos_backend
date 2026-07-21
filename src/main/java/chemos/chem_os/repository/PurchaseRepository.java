@@ -59,4 +59,21 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
           AND p.status.id = 'CONFIRMED'
         """)
     List<VesselGroupCompany> findCompanyToByGroup();
+
+    @Query("""
+SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+    UPPER(TRIM(p.vesselName)),
+    UPPER(TRIM(p.product.name)),
+    UPPER(TRIM(p.dischargePort.displayName)),
+    COALESCE(SUM(p.quantity), 0)
+)
+FROM Purchase p
+WHERE LOWER(TRIM(p.marketStatus)) = 'ready'
+  AND p.status.id = 'CONFIRMED'
+GROUP BY
+    UPPER(TRIM(p.vesselName)),
+    UPPER(TRIM(p.product.name)),
+    UPPER(TRIM(p.dischargePort.displayName))
+""")
+    List<VesselStockGroupAggregate> sumPhysicalReadyByGroup();
 }
