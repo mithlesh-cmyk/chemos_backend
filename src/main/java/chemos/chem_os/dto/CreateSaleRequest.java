@@ -2,40 +2,45 @@ package chemos.chem_os.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 
+import java.time.LocalDate;
+
 public record CreateSaleRequest(
+
+        LocalDate date,
+
         String salesType,
-        
+
         String companyTo,
 
         String companyFrom,
-        
+
         @JsonAlias({"product", "productId"})
         String productId,
-        
+
         Double quantity,
-        
+
         Double price,
-        
+
         String payment,
-        
+
         String deliveryTerm,
-        
+
         String port,
-        
+
         Double marketPrice,
-        
+
         String marketStatus,
-        
+
         Integer storageDays,
-        
+
         String make,
-        
+
         String packaging,
-        
+
         String origin,
-        
+
         String transitTolerance,
-        
+
         String message,
 
         String vesselName,

@@ -17,22 +17,45 @@ public interface CompanyRepository extends JpaRepository<Companies, String> {
 
     @Query(
             value = """
-        SELECT *
-        FROM companies
-        WHERE
-            -- Shortcut: If query input string is empty, fetch everything instantly
-            :prefix = '' 
-            OR search_key LIKE CONCAT('%', :prefix, '%')
-        ORDER BY 
-            CASE 
-                -- 1. Highest priority: Company name starts with user text
-                WHEN search_key LIKE CONCAT(:prefix, '%') THEN 1
-                -- 2. Lower priority: Text matches somewhere in the middle
-                ELSE 2
-            END,
-            display_name ASC
-        LIMIT :limit
-        """,
+    SELECT *
+    FROM companies
+    WHERE
+        :prefix = ''
+        OR search_key LIKE CONCAT('%', :prefix, '%')
+        OR word_similarity(search_key, :prefix) >= 0.20
+        OR similarity(search_key, :prefix) >= 0.20
+    ORDER BY
+        CASE
+            -- 1. Exact match
+            WHEN search_key = :prefix THEN 1
+
+            -- 2. Starts with query
+            WHEN search_key LIKE CONCAT(:prefix, '%') THEN 2
+
+            -- 3. Any word starts with query
+            WHEN search_key LIKE CONCAT('% ', :prefix, '%') THEN 3
+
+            -- 4. Acronym in brackets
+            WHEN search_key LIKE CONCAT('%(', :prefix, '%') THEN 4
+
+            -- 5. Contains query
+            WHEN search_key LIKE CONCAT('%', :prefix, '%') THEN 5
+
+            -- 6. Fuzzy match
+            ELSE 6
+        END,
+
+        LENGTH(search_key) ASC,
+
+        GREATEST(
+            word_similarity(search_key, :prefix),
+            similarity(search_key, :prefix)
+        ) DESC,
+
+        display_name ASC
+
+    LIMIT :limit
+    """,
             nativeQuery = true
     )
     List<Companies> findSuggestions(

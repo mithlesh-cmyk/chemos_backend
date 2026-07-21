@@ -78,6 +78,11 @@ public class SalesController {
             @RequestParam(required = false) String port,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            )
             Pageable pageable
     ) {
         SalesFilterRequest filters = new SalesFilterRequest(productId, companyTo, port, startDate, endDate);
