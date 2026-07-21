@@ -154,7 +154,7 @@ public class VesselStockStatsService {
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
-        Map<GroupKey, Double> physicalReadyByGroup = toMap(physicalStockRepository.sumPhysicalReadyByGroup());
+        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
         Map<ProductPortKey, Double> physicalReadyByProductPort = physicalReadyByGroup.entrySet().stream()
                 .collect(Collectors.groupingBy(
                         e -> new ProductPortKey(cleanProductName(e.getKey().product()), e.getKey().dischargePort()),
@@ -222,7 +222,7 @@ public class VesselStockStatsService {
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
-        Map<GroupKey, Double> physicalReadyByGroup = toMap(physicalStockRepository.sumPhysicalReadyByGroup());
+        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
         Map<ProductPortKey, Double> physicalReadyByProductPort = physicalReadyByGroup.entrySet().stream()
                 .collect(Collectors.groupingBy(
                         e -> new ProductPortKey(cleanProductName(e.getKey().product()), e.getKey().dischargePort()),
