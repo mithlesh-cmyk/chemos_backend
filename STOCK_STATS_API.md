@@ -31,7 +31,7 @@ The logged-in user's role must have the `STOCK_STATS_VIEW` permission, or these 
 |---|---|---|
 | `physicalStock` | `physicalStockOpening` | Physical warehouse stock currently on hand (from the physical stock import) |
 | `physicalSold` | `physicalSold` | Physical ("Ready Market") stock sold today |
-| `physicalUnsold` | `physicalUnsoldClosing` | `physicalStock − physicalSold` |
+| `physicalUnsold` | `physicalUnsoldClosing` | `physicalReady + physicalStock − physicalSold` |
 | `incomingStock` | `incomingUnsoldOpening` | Incoming unsold balance carried forward from yesterday's closing |
 | `purchaseIncoming` | `incomingUnsoldNew` | New "Incoming" purchases booked today |
 | `incomingSales` | `incomingSold` | "Incoming" stock sold today |
@@ -186,7 +186,7 @@ Each of these is a JPA `@Query` that returns a flat `List<VesselStockGroupAggreg
 The union of all four maps' keys (`allGroups`, a `LinkedHashSet` so iteration order is stable/deterministic) is the full set of groups that exist *today*, even if a group has stock but no sales, or sales but no stock. For each group, the four numbers are combined with plain arithmetic — no aggregation happens outside SQL, only combination:
 
 ```
-physicalUnsoldClosing = physicalStockOpening − physicalSold
+physicalUnsoldClosing = physicalReady + physicalStockOpening − physicalSold
 incomingUnsoldClosing = incomingUnsoldOpening + incomingUnsoldNew − incomingSold
 totalStock             = physicalUnsoldClosing + incomingUnsoldClosing
 ```
