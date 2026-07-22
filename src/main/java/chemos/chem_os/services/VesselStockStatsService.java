@@ -72,6 +72,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
+        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
 
@@ -80,12 +81,14 @@ public class VesselStockStatsService {
         allGroups.addAll(physicalSoldByGroup.keySet());
         allGroups.addAll(incomingNewByGroup.keySet());
         allGroups.addAll(incomingSoldByGroup.keySet());
+        allGroups.addAll(physicalReadyByGroup.keySet());
 
         List<VesselStockStatsResponse> results = new ArrayList<>();
         for (GroupKey key : allGroups) {
             double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
             double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
-            double physicalUnsoldClosing = round(physicalStockOpening - physicalSold);
+            double physicalReady = round(physicalReadyByGroup.getOrDefault(key, 0.0));
+            double physicalUnsoldClosing = round(physicalReady + physicalStockOpening - physicalSold);
 
             double incomingUnsoldOpening = round(resolveIncomingOpening(key, today));
             double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
@@ -110,6 +113,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldAllTimeByGroup());
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingAllTimeByGroup());
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldAllTimeByGroup());
+        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
 
@@ -118,12 +122,14 @@ public class VesselStockStatsService {
         allGroups.addAll(physicalSoldByGroup.keySet());
         allGroups.addAll(incomingNewByGroup.keySet());
         allGroups.addAll(incomingSoldByGroup.keySet());
+        allGroups.addAll(physicalReadyByGroup.keySet());
 
         List<VesselStockStatsResponse> results = new ArrayList<>();
         for (GroupKey key : allGroups) {
             double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
             double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
-            double physicalUnsoldClosing = round(physicalStockOpening - physicalSold);
+            double physicalReady = round(physicalReadyByGroup.getOrDefault(key, 0.0));
+            double physicalUnsoldClosing = round(physicalReady + physicalStockOpening - physicalSold);
 
             double incomingUnsoldOpening = 0.0;
             double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
