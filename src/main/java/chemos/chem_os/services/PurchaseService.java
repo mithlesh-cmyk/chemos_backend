@@ -267,7 +267,7 @@ PurchaseService {
                         p.getEta() != null ? p.getEta().toString() : "",
                         p.getVesselName() != null ? p.getVesselName() : "",
                         p.getProduct() != null ? p.getProduct().getName() : "",
-                        p.getPort() != null ? p.getPort().getDisplayName() : "",
+                        p.getDischargePort() != null ? p.getDischargePort().getDisplayName() : "",
                         ""  // always blank — user fills this in
                 );
             }
