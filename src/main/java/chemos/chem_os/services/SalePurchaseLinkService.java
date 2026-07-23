@@ -124,11 +124,17 @@ public class SalePurchaseLinkService {
 
     @Transactional(readOnly = true)
     public List<SalePurchaseLinkResponse> getLinksByUser(String username) {
-        String resolvedUsername = (username == null || username.isBlank())
-                ? currentUserService.getUsername()
-                : username.trim();
+        boolean wantsCurrentUser = username == null || username.isBlank();
 
-        List<SalePurchaseLink> links = linkRepository.findByCreatedByUsernameOrderByCreatedAtDesc(resolvedUsername);
+        List<SalePurchaseLink> links;
+        if (wantsCurrentUser && currentUserService.isSuperRole()) {
+            // Admins (and other super roles) see every link, not just ones they created themselves.
+            links = linkRepository.findAllByOrderByCreatedAtDesc();
+        } else {
+            String resolvedUsername = wantsCurrentUser ? currentUserService.getUsername() : username.trim();
+            links = linkRepository.findByCreatedByUsernameOrderByCreatedAtDesc(resolvedUsername);
+        }
+
         return links.stream()
                 .map(link -> {
                     Purchase purchase = purchaseRepository.findById(link.getPurchaseId()).orElse(null);
