@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/links")
-public class SalePurchaseLinkController {
+public class  SalePurchaseLinkController {
 
     private final SalePurchaseLinkService linkService;
 

@@ -47,4 +47,10 @@ public interface PhysicalStockRepository extends JpaRepository<PhysicalStock, St
         """)
 
       List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
+
+    @Query("""
+    SELECT MAX(p.updatedAt)
+    FROM PhysicalStock p
+""")
+    LocalDateTime findLastCsvUploadTime();
 }
