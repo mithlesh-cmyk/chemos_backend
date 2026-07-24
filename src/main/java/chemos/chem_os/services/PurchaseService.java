@@ -286,7 +286,7 @@ PurchaseService {
 
         String currentUser = currentUserService.getUsername();
 
-        LocalDateTime sessionTimestamp = LocalDateTime.now();
+        LocalDateTime sessionTimestamp = LocalDateTime.now(BUSINESS_ZONE);
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")

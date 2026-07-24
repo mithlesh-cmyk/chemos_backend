@@ -68,11 +68,23 @@ public class VesselStockStatsService {
     private List<VesselStockStatsResponse> computeGroupStats() {
         LocalDate today = LocalDate.now(BUSINESS_ZONE);
 
+        LocalDateTime lastCsvUpload = physicalStockRepository.findLastCsvUploadTime();
+
         Map<GroupKey, Double> physicalOpeningByGroup = toMap(physicalStockRepository.sumPhysicalStockOpeningByGroup());
-        Map<GroupKey, Double> physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
+
+        Map<GroupKey, Double> physicalSoldByGroup;
+        Map<GroupKey, Double> physicalReadyByGroup;
+
+        if (lastCsvUpload == null) {
+            physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
+            physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
+        } else {
+            physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldAfter(lastCsvUpload));
+            physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyAfter(lastCsvUpload));
+        }
+
         Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
         Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
-        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
 
@@ -228,7 +240,15 @@ public class VesselStockStatsService {
         Map<ProductPortKey, String> companyByProductPort = toProductPortCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<ProductPortKey, String> salesCompanyByProductPort = toProductPortCompanyMap(salesRepository.findCompanyFromByGroup());
 
-        Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
+        LocalDateTime lastCsvUpload = physicalStockRepository.findLastCsvUploadTime();
+
+        Map<GroupKey, Double> physicalReadyByGroup;
+        if (lastCsvUpload == null) {
+            physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
+        } else {
+            physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyAfter(lastCsvUpload));
+        }
+
         Map<ProductPortKey, Double> physicalReadyByProductPort = physicalReadyByGroup.entrySet().stream()
                 .collect(Collectors.groupingBy(
                         e -> new ProductPortKey(cleanProductName(e.getKey().product()), e.getKey().dischargePort()),
