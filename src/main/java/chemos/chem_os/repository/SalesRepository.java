@@ -121,4 +121,16 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
           AND s.status.id = 'CONFIRMED'
         """)
     List<VesselGroupCompany> findCompanyFromByGroup();
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
+        WHERE s.marketStatus = 'incoming'
+          AND s.status.id = 'CONFIRMED'
+          AND s.confirmedAt > :after
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumIncomingSoldAfter(@Param("after") LocalDateTime after);
 }

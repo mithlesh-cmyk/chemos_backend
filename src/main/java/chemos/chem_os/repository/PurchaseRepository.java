@@ -95,4 +95,15 @@ GROUP BY
     UPPER(TRIM(p.dischargePort.displayName))
 """)
     List<VesselStockGroupAggregate> sumPhysicalReadyAfter(@Param("after") LocalDateTime after);
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(p.quantity), 0))
+        FROM Purchase p
+        WHERE p.marketStatus = 'incoming'
+          AND p.status.id = 'CONFIRMED'
+          AND p.confirmedAt > :after
+        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumIncomingNewAfter(@Param("after") LocalDateTime after);
 }

@@ -75,16 +75,21 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalSoldByGroup;
         Map<GroupKey, Double> physicalReadyByGroup;
 
+        Map<GroupKey, Double> incomingNewByGroup;
+        Map<GroupKey, Double> incomingSoldByGroup;
+
         if (lastCsvUpload == null) {
             physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldByGroup(today));
             physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
+            incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
+            incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
         } else {
             physicalSoldByGroup = toMap(salesRepository.sumReadyMarketSoldAfter(lastCsvUpload));
             physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyAfter(lastCsvUpload));
+            incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewAfter(lastCsvUpload));
+            incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldAfter(lastCsvUpload));
         }
 
-        Map<GroupKey, Double> incomingNewByGroup = toMap(purchaseRepository.sumIncomingNewByGroup(today));
-        Map<GroupKey, Double> incomingSoldByGroup = toMap(salesRepository.sumIncomingSoldByGroup(today));
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
 
