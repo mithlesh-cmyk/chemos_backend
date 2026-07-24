@@ -19,11 +19,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SalesService {
+
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
 
     private final SalesRepository salesRepository;
     private final SalesMapper salesMapper;
@@ -56,11 +59,11 @@ public class SalesService {
         if (product != null && !product.isBlank()) {
             String productFilter = product.trim();
             spec = spec.and((root, query, cb) -> {
-            var productJoin = root.join("product", JoinType.LEFT);
-            return cb.or(
-                cb.equal(productJoin.get("id"), productFilter),
-                cb.equal(cb.lower(productJoin.get("name")), productFilter.toLowerCase())
-            );
+                var productJoin = root.join("product", JoinType.LEFT);
+                return cb.or(
+                        cb.equal(productJoin.get("id"), productFilter),
+                        cb.equal(cb.lower(productJoin.get("name")), productFilter.toLowerCase())
+                );
             });
         }
         return salesRepository.findAll(spec, pageable);
@@ -91,7 +94,7 @@ public class SalesService {
         }
         Sales snapshot = before.toBuilder().build();
         before.setStatus(resolveStatus("CONFIRMED"));
-        before.setConfirmedAt(LocalDateTime.now());
+        before.setConfirmedAt(LocalDateTime.now(BUSINESS_ZONE));
         before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("CONFIRM", "SALE", saved.getId(), snapshot, saved);

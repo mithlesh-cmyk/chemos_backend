@@ -53,6 +53,7 @@ PurchaseService {
     private final PortTransitDaysRepository portTransitDaysRepository;
     private final StatusRepository statusRepository;
     private final CurrentUserService currentUserService;
+    private final InventoryService inventoryService;
 
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest) {
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
@@ -285,7 +286,7 @@ PurchaseService {
 
         String currentUser = currentUserService.getUsername();
 
-        LocalDateTime sessionTimestamp = LocalDateTime.now();
+        LocalDateTime sessionTimestamp = LocalDateTime.now(BUSINESS_ZONE);
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
@@ -352,8 +353,16 @@ PurchaseService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to parse CSV: " + e.getMessage());
         }
 
-        PhysicalStockImportResult result = new PhysicalStockImportResult(updated, skipped, errors);
+        PhysicalStockImportResult result =
+                new PhysicalStockImportResult(updated, skipped, errors);
+
         auditLogService.log("IMPORT", "PHYSICAL_STOCK", null, null, result);
+
+// Refresh inventory after successful physical stock import
+        if (updated > 0) { //handle empty physical stock csv
+            inventoryService.refreshInventory();
+        }
+
         return result;
     }
 

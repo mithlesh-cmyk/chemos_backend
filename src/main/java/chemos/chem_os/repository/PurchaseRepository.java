@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, String>, JpaSpecificationExecutor<Purchase> {
@@ -47,9 +48,9 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
           AND CAST(p.confirmedAt AS date) < :beforeDate
         """)
     double sumIncomingConfirmedBefore(@Param("vesselName") String vesselName,
-                                       @Param("product") String product,
-                                       @Param("port") String port,
-                                       @Param("beforeDate") LocalDate beforeDate);
+                                      @Param("product") String product,
+                                      @Param("port") String port,
+                                      @Param("beforeDate") LocalDate beforeDate);
 
     @Query("""
         SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
@@ -76,4 +77,33 @@ GROUP BY
     UPPER(TRIM(p.dischargePort.displayName))
 """)
     List<VesselStockGroupAggregate> sumPhysicalReadyByGroup();
+
+    @Query("""
+SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+    UPPER(TRIM(p.vesselName)),
+    UPPER(TRIM(p.product.name)),
+    UPPER(TRIM(p.dischargePort.displayName)),
+    COALESCE(SUM(p.quantity), 0)
+)
+FROM Purchase p
+WHERE LOWER(TRIM(p.marketStatus)) = 'ready'
+AND p.status.id='CONFIRMED'
+AND p.confirmedAt > :after
+GROUP BY
+    UPPER(TRIM(p.vesselName)),
+    UPPER(TRIM(p.product.name)),
+    UPPER(TRIM(p.dischargePort.displayName))
+""")
+    List<VesselStockGroupAggregate> sumPhysicalReadyAfter(@Param("after") LocalDateTime after);
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(p.quantity), 0))
+        FROM Purchase p
+        WHERE p.marketStatus = 'incoming'
+          AND p.status.id = 'CONFIRMED'
+          AND p.confirmedAt > :after
+        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumIncomingNewAfter(@Param("after") LocalDateTime after);
 }
