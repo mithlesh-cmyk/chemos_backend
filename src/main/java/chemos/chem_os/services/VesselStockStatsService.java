@@ -6,10 +6,7 @@ import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
 import chemos.chem_os.model.IncomingUnsoldSnapshot;
-import chemos.chem_os.repository.IncomingUnsoldSnapshotRepository;
-import chemos.chem_os.repository.PhysicalStockRepository;
-import chemos.chem_os.repository.PurchaseRepository;
-import chemos.chem_os.repository.SalesRepository;
+import chemos.chem_os.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,6 +35,7 @@ public class VesselStockStatsService {
 
     private final SalesRepository salesRepository;
     private final PurchaseRepository purchaseRepository;
+    private final InventoryRepository inventoryRepository;
     private final PhysicalStockRepository physicalStockRepository;
     private final IncomingUnsoldSnapshotRepository snapshotRepository;
     private final AuditLogService auditLogService;
@@ -374,5 +372,9 @@ public class VesselStockStatsService {
     }
 
     private record ProductPortKey(String product, String dischargePort) {
+    }
+
+    public LocalDateTime getLastCsvUploadedAt() {
+        return inventoryRepository.getLastCsvUploadedAt();
     }
 }
