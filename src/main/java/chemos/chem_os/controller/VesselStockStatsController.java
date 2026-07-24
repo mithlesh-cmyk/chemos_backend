@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,5 +47,17 @@ public class VesselStockStatsController {
     @GetMapping("/by-product/history")
     public ResponseEntity<List<ProductStockBreakdownResponse>> getStockStatsByProductHistory() {
         return ResponseEntity.ok(vesselStockStatsService.getProductBreakdownHistorical());
+    }
+
+    @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")
+    @GetMapping("/last-upload")
+    public ResponseEntity<Map<String, LocalDateTime>> getLastUpload() {
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "lastCsvUploadedAt",
+                        vesselStockStatsService.getLastCsvUploadedAt()
+                )
+        );
     }
 }
