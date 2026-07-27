@@ -89,4 +89,11 @@ public class SalesController {
         Page<Sales> result = salesService.getFilteredSales(filters, pageable);
         return ResponseEntity.ok(result);
     }
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateSale(@PathVariable String id) {
+        salesService.deactivateSale(id);
+        return ResponseEntity.noContent().build();
+    }
 }
