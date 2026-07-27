@@ -1,15 +1,8 @@
 package chemos.chem_os.dto;
 
-public record CompanyCreationResponse(
-
-        String status,
-
+public record CompanyReactivateResponse(
         String message,
-
-        CompanySuggestionResposne data,
-
         String existingCompanyId,
-
         boolean canReactivate
 ) {
 }

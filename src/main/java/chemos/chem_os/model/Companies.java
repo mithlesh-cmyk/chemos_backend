@@ -34,4 +34,8 @@ public class Companies {
 
     @Column(name = "created_at")
     private LocalDate createdAt;
+
+    @Column(name = "is_active")
+    @Builder.Default
+    private Boolean isActive = true;
 }
