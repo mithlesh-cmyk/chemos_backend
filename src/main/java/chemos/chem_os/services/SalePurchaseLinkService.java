@@ -3,12 +3,15 @@ package chemos.chem_os.services;
 import chemos.chem_os.dto.CreateSalePurchaseLinkRequest;
 import chemos.chem_os.dto.PurchaseLinkSummaryResponse;
 import chemos.chem_os.dto.SaleLinkSummaryResponse;
+import chemos.chem_os.dto.SalePurchaseLinkNegativeHistoryResponse;
 import chemos.chem_os.dto.SalePurchaseLinkResponse;
 import chemos.chem_os.dto.UpdateSalePurchaseLinkRequest;
 import chemos.chem_os.model.Purchase;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.model.SalePurchaseLink;
+import chemos.chem_os.model.SalePurchaseLinkNegativeHistory;
 import chemos.chem_os.repository.PurchaseRepository;
+import chemos.chem_os.repository.SalePurchaseLinkNegativeHistoryRepository;
 import chemos.chem_os.repository.SalePurchaseLinkRepository;
 import chemos.chem_os.repository.SalesRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import java.util.List;
 public class SalePurchaseLinkService {
 
     private final SalePurchaseLinkRepository linkRepository;
+    private final SalePurchaseLinkNegativeHistoryRepository negativeHistoryRepository;
     private final SalesRepository salesRepository;
     private final PurchaseRepository purchaseRepository;
     private final AuditLogService auditLogService;
@@ -71,7 +75,9 @@ public class SalePurchaseLinkService {
 
         SalePurchaseLink saved = linkRepository.save(link);
         auditLogService.log("CREATE", "SALE_PURCHASE_LINK", saved.getId(), null, saved);
-        return buildResponse(saved, purchase, sale);
+        SalePurchaseLinkResponse response = buildResponse(saved, purchase, sale);
+        recordNegativeHistoryIfNeeded(saved, response, "CREATE");
+        return response;
     }
 
     @Transactional
@@ -112,7 +118,9 @@ public class SalePurchaseLinkService {
         link.setUpdatedBy(currentUserService.getUsername());
         SalePurchaseLink saved = linkRepository.save(link);
         auditLogService.log("UPDATE", "SALE_PURCHASE_LINK", saved.getId(), snapshot, saved);
-        return buildResponse(saved, purchase, sale);
+        SalePurchaseLinkResponse response = buildResponse(saved, purchase, sale);
+        recordNegativeHistoryIfNeeded(saved, response, "UPDATE");
+        return response;
     }
 
     @Transactional
@@ -162,6 +170,20 @@ public class SalePurchaseLinkService {
                     return buildResponse(link, purchase, sale);
                 })
                 .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SalePurchaseLinkNegativeHistoryResponse> getNegativeHistory() {
+        return negativeHistoryRepository.findAllByOrderByOccurredAtDesc().stream()
+                .map(this::toHistoryResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SalePurchaseLinkNegativeHistoryResponse> getNegativeHistoryForLink(String linkId) {
+        return negativeHistoryRepository.findByLinkIdOrderByOccurredAtDesc(linkId).stream()
+                .map(this::toHistoryResponse)
                 .toList();
     }
 
@@ -268,6 +290,43 @@ public class SalePurchaseLinkService {
         }
 
         return proposedQty > purchaseAvailable;
+    }
+
+    /**
+     * Persists a permanent history row when a create/update leaves the link's
+     * purchase-side quantity negative, so the event survives later corrections
+     * or deletion of the link itself.
+     */
+    private void recordNegativeHistoryIfNeeded(SalePurchaseLink link, SalePurchaseLinkResponse response, String action) {
+        if (!Boolean.TRUE.equals(link.getNegative())) {
+            return;
+        }
+        SalePurchaseLinkNegativeHistory history = SalePurchaseLinkNegativeHistory.builder()
+                .linkId(response.id())
+                .saleId(response.saleId())
+                .purchaseId(response.purchaseId())
+                .linkedQuantity(response.linkedQuantity())
+                .purchaseOriginalQuantity(response.purchaseOriginalQuantity())
+                .purchaseAvailableQuantity(response.purchaseAvailableQuantity())
+                .action(action)
+                .changedByUsername(currentUserService.getUsername())
+                .build();
+        negativeHistoryRepository.save(history);
+    }
+
+    private SalePurchaseLinkNegativeHistoryResponse toHistoryResponse(SalePurchaseLinkNegativeHistory history) {
+        return new SalePurchaseLinkNegativeHistoryResponse(
+                history.getId(),
+                history.getLinkId(),
+                history.getSaleId(),
+                history.getPurchaseId(),
+                history.getLinkedQuantity(),
+                history.getPurchaseOriginalQuantity(),
+                history.getPurchaseAvailableQuantity(),
+                history.getAction(),
+                history.getChangedByUsername(),
+                history.getOccurredAt()
+        );
     }
 
     /**
