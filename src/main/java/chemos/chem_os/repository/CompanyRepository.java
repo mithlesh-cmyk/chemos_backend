@@ -11,23 +11,19 @@ import java.util.Optional;
 
 public interface CompanyRepository extends JpaRepository<Companies, String> {
 
-    Optional<Companies> findByIdAndIsActiveTrue(String id);
-    Optional<Companies> findBySearchKeyAndIsActiveTrue(String searchKey);
     Optional<Companies> findBySearchKey(String searchKey);
-    Optional<Companies> findByDisplayNameIgnoreCaseAndIsActiveTrue(String displayName);
+
+    Optional<Companies> findByDisplayNameIgnoreCase(String displayName);
 
     @Query(
             value = """
     SELECT *
     FROM companies
-    WHERE is_active = true
-    AND
-    (
+    WHERE
         :prefix = ''
         OR search_key LIKE CONCAT('%', :prefix, '%')
         OR word_similarity(search_key, :prefix) >= 0.20
         OR similarity(search_key, :prefix) >= 0.20
-    )
     ORDER BY
         CASE
             -- 1. Exact match
