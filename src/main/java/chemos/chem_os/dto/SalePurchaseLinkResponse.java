@@ -13,10 +13,11 @@ public record SalePurchaseLinkResponse(
         String createdByUsername,
         String updatedBy,
         Double linkedQuantity,
+        Boolean negative,                   // true if linkedQuantity ever exceeded the PO's available quantity
 
         // Purchase context
         Double purchaseOriginalQuantity,
-        Double purchaseAvailableQuantity,   // purchase.quantity - SUM(all linked for this PO)
+        Double purchaseAvailableQuantity,   // purchase.quantity - SUM(all linked for this PO); can be negative
 
         // Sale context
         Double saleTotalRequired,
