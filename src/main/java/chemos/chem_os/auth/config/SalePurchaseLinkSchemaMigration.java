@@ -20,6 +20,7 @@ public class SalePurchaseLinkSchemaMigration implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         ensureColumnExists();
+        ensureNegativeColumnExists();
     }
 
     private void ensureColumnExists() {
@@ -42,5 +43,27 @@ public class SalePurchaseLinkSchemaMigration implements ApplicationRunner {
                 "ALTER TABLE sale_purchase_links ADD COLUMN created_by_username VARCHAR(255) NOT NULL DEFAULT 'system'"
         );
         log.info("Added created_by_username column to sale_purchase_links.");
+    }
+
+    private void ensureNegativeColumnExists() {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'sale_purchase_links'
+                  AND column_name = 'is_negative'
+                """
+        );
+
+        if (!rows.isEmpty()) {
+            log.info("Column is_negative already exists on sale_purchase_links.");
+            return;
+        }
+
+        log.info("Adding missing is_negative column to sale_purchase_links...");
+        jdbcTemplate.execute(
+                "ALTER TABLE sale_purchase_links ADD COLUMN is_negative BOOLEAN NOT NULL DEFAULT FALSE"
+        );
+        log.info("Added is_negative column to sale_purchase_links.");
     }
 }

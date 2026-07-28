@@ -54,6 +54,13 @@ public class  SalePurchaseLinkController {
 
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/negative")
+    public ResponseEntity<List<SalePurchaseLinkResponse>> getNegativeLinks() {
+        return ResponseEntity.ok(linkService.getNegativeLinks());
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/user/{username}")
     public ResponseEntity<List<SalePurchaseLinkResponse>> getLinksByUser(@PathVariable String username) {
         return ResponseEntity.ok(linkService.getLinksByUser(username));

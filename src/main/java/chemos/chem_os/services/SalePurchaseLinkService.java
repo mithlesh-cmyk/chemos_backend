@@ -58,7 +58,7 @@ public class SalePurchaseLinkService {
                     "Purchase " + request.purchaseId() + " has no quantity set.");
         }
 
-        validateQuantities(request.saleId(), request.purchaseId(), request.linkedQuantity(),
+        boolean negative = validateQuantities(request.saleId(), request.purchaseId(), request.linkedQuantity(),
                 sale.getQuantity(), purchase.getQuantity(), null);
 
         SalePurchaseLink link = SalePurchaseLink.builder()
@@ -66,6 +66,7 @@ public class SalePurchaseLinkService {
                 .purchaseId(request.purchaseId())
                 .createdByUsername(currentUserService.getUsername())
                 .linkedQuantity(request.linkedQuantity())
+                .negative(negative)
                 .build();
 
         SalePurchaseLink saved = linkRepository.save(link);
@@ -102,11 +103,12 @@ public class SalePurchaseLinkService {
         }
 
         // Pass the current link so its existing quantity is excluded from the validation sums
-        validateQuantities(link.getSaleId(), link.getPurchaseId(), request.linkedQuantity(),
+        boolean negative = validateQuantities(link.getSaleId(), link.getPurchaseId(), request.linkedQuantity(),
                 sale.getQuantity(), purchase.getQuantity(), link);
 
         SalePurchaseLink snapshot = link.toBuilder().build();
         link.setLinkedQuantity(request.linkedQuantity());
+        link.setNegative(negative);
         link.setUpdatedBy(currentUserService.getUsername());
         SalePurchaseLink saved = linkRepository.save(link);
         auditLogService.log("UPDATE", "SALE_PURCHASE_LINK", saved.getId(), snapshot, saved);
@@ -136,6 +138,21 @@ public class SalePurchaseLinkService {
         }
 
         return links.stream()
+                .map(link -> {
+                    Purchase purchase = purchaseRepository.findById(link.getPurchaseId()).orElse(null);
+                    Sales sale = salesRepository.findById(link.getSaleId()).orElse(null);
+                    if (purchase == null || sale == null) {
+                        return null;
+                    }
+                    return buildResponse(link, purchase, sale);
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SalePurchaseLinkResponse> getNegativeLinks() {
+        return linkRepository.findByNegativeTrueOrderByCreatedAtDesc().stream()
                 .map(link -> {
                     Purchase purchase = purchaseRepository.findById(link.getPurchaseId()).orElse(null);
                     Sales sale = salesRepository.findById(link.getSaleId()).orElse(null);
@@ -218,12 +235,16 @@ public class SalePurchaseLinkService {
 
     /**
      * Validates that {@code proposedQty} can be committed for a given (saleId, purchaseId) pair.
+     * The sale side is still a hard limit (can't fulfil more than the sale requires), but the
+     * purchase side is allowed to go negative (over-committing the PO) — callers persist the
+     * returned flag so over-allocated links stay a permanent, queryable record.
      *
      * @param existingLink  the current link being updated, or {@code null} for a new link.
      *                      When not null, its existing linkedQuantity is subtracted from the
      *                      running sums before checking, so it doesn't count against itself.
+     * @return true if {@code proposedQty} exceeds the purchase's available quantity.
      */
-    private void validateQuantities(String saleId, String purchaseId, double proposedQty,
+    private boolean validateQuantities(String saleId, String purchaseId, double proposedQty,
                                     double saleTotal, double purchaseOriginal,
                                     SalePurchaseLink existingLink) {
 
@@ -239,19 +260,14 @@ public class SalePurchaseLinkService {
         double purchaseAvailable = purchaseOriginal - purchaseAlreadyUsed;
         double saleRemaining = saleTotal - saleAlreadyLinked;
 
-        if (proposedQty > purchaseAvailable) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("Linked quantity (%.2f) exceeds available PO quantity (%.2f). "
-                            + "The PO has %.2f already committed to other sales.",
-                            proposedQty, purchaseAvailable, purchaseAlreadyUsed));
-        }
-
         if (proposedQty > saleRemaining) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("Linked quantity (%.2f) exceeds remaining sale requirement (%.2f). "
                             + "The sale already has %.2f linked from other POs.",
                             proposedQty, saleRemaining, saleAlreadyLinked));
         }
+
+        return proposedQty > purchaseAvailable;
     }
 
     /**
@@ -271,6 +287,7 @@ public class SalePurchaseLinkService {
                 link.getCreatedByUsername(),
                 link.getUpdatedBy(),
                 link.getLinkedQuantity(),
+                link.getNegative(),
                 purchase.getQuantity(),
                 purchaseAvailable,
                 sale.getQuantity(),
