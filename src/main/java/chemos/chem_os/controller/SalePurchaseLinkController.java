@@ -3,6 +3,7 @@ package chemos.chem_os.controller;
 import chemos.chem_os.dto.CreateSalePurchaseLinkRequest;
 import chemos.chem_os.dto.PurchaseLinkSummaryResponse;
 import chemos.chem_os.dto.SaleLinkSummaryResponse;
+import chemos.chem_os.dto.SalePurchaseLinkNegativeHistoryResponse;
 import chemos.chem_os.dto.SalePurchaseLinkResponse;
 import chemos.chem_os.dto.UpdateSalePurchaseLinkRequest;
 import chemos.chem_os.services.SalePurchaseLinkService;
@@ -39,6 +40,15 @@ public class  SalePurchaseLinkController {
 
 
     @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}")
+    public ResponseEntity<SalePurchaseLinkResponse> patchLink(
+            @PathVariable String id,
+            @RequestBody UpdateSalePurchaseLinkRequest request) {
+        return ResponseEntity.ok(linkService.updateLink(id, request));
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLink(@PathVariable String id) {
         linkService.deleteLink(id);
@@ -50,6 +60,28 @@ public class  SalePurchaseLinkController {
     @GetMapping("/me")
     public ResponseEntity<List<SalePurchaseLinkResponse>> getMyLinks() {
         return ResponseEntity.ok(linkService.getLinksByUser(null));
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/negative")
+    public ResponseEntity<List<SalePurchaseLinkResponse>> getNegativeLinks() {
+        return ResponseEntity.ok(linkService.getNegativeLinks());
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/negative/history")
+    public ResponseEntity<List<SalePurchaseLinkNegativeHistoryResponse>> getNegativeHistory() {
+        return ResponseEntity.ok(linkService.getNegativeHistory());
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/{id}/negative/history")
+    public ResponseEntity<List<SalePurchaseLinkNegativeHistoryResponse>> getNegativeHistoryForLink(
+            @PathVariable String id) {
+        return ResponseEntity.ok(linkService.getNegativeHistoryForLink(id));
     }
 
 

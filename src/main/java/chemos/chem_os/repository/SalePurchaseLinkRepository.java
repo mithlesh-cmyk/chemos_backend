@@ -17,6 +17,8 @@ public interface SalePurchaseLinkRepository extends JpaRepository<SalePurchaseLi
 
     List<SalePurchaseLink> findAllByOrderByCreatedAtDesc();
 
+    List<SalePurchaseLink> findByNegativeTrueOrderByCreatedAtDesc();
+
     boolean existsBySaleIdAndPurchaseId(String saleId, String purchaseId);
 
     /**
