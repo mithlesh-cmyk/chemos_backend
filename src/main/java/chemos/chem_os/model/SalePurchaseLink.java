@@ -48,6 +48,15 @@ public class SalePurchaseLink {
     @Column(name = "linked_quantity", nullable = false)
     private Double linkedQuantity;
 
+    /**
+     * True when this link's linkedQuantity exceeded the purchase's available
+     * quantity at the time it was created/updated, i.e. the PO was over-committed.
+     * Kept as a permanent record even if later edits bring it back to non-negative.
+     */
+    @Column(name = "is_negative", nullable = false)
+    @Builder.Default
+    private Boolean negative = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
