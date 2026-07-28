@@ -39,6 +39,15 @@ public class  SalePurchaseLinkController {
 
 
     @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}")
+    public ResponseEntity<SalePurchaseLinkResponse> patchLink(
+            @PathVariable String id,
+            @RequestBody UpdateSalePurchaseLinkRequest request) {
+        return ResponseEntity.ok(linkService.updateLink(id, request));
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLink(@PathVariable String id) {
         linkService.deleteLink(id);
