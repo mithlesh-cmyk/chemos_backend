@@ -3,6 +3,7 @@ package chemos.chem_os.controller;
 import chemos.chem_os.dto.CreateSalePurchaseLinkRequest;
 import chemos.chem_os.dto.PurchaseLinkSummaryResponse;
 import chemos.chem_os.dto.SaleLinkSummaryResponse;
+import chemos.chem_os.dto.SalePurchaseLinkNegativeHistoryResponse;
 import chemos.chem_os.dto.SalePurchaseLinkResponse;
 import chemos.chem_os.dto.UpdateSalePurchaseLinkRequest;
 import chemos.chem_os.services.SalePurchaseLinkService;
@@ -66,6 +67,21 @@ public class  SalePurchaseLinkController {
     @GetMapping("/negative")
     public ResponseEntity<List<SalePurchaseLinkResponse>> getNegativeLinks() {
         return ResponseEntity.ok(linkService.getNegativeLinks());
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/negative/history")
+    public ResponseEntity<List<SalePurchaseLinkNegativeHistoryResponse>> getNegativeHistory() {
+        return ResponseEntity.ok(linkService.getNegativeHistory());
+    }
+
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/{id}/negative/history")
+    public ResponseEntity<List<SalePurchaseLinkNegativeHistoryResponse>> getNegativeHistoryForLink(
+            @PathVariable String id) {
+        return ResponseEntity.ok(linkService.getNegativeHistoryForLink(id));
     }
 
 
