@@ -103,7 +103,7 @@ public class VesselStockStatsService {
             double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
             double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
             double physicalReady = round(physicalReadyByGroup.getOrDefault(key, 0.0));
-            double physicalUnsoldClosing = round(physicalReady + physicalStockOpening - physicalSold);
+            double physicalUnsoldClosing = round( physicalStockOpening - physicalSold);
 
             double incomingUnsoldOpening = round(resolveIncomingOpening(key, today));
             double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
@@ -144,7 +144,7 @@ public class VesselStockStatsService {
             double physicalStockOpening = round(physicalOpeningByGroup.getOrDefault(key, 0.0));
             double physicalSold = round(physicalSoldByGroup.getOrDefault(key, 0.0));
             double physicalReady = round(physicalReadyByGroup.getOrDefault(key, 0.0));
-            double physicalUnsoldClosing = round(physicalReady + physicalStockOpening - physicalSold);
+            double physicalUnsoldClosing = round( physicalStockOpening - physicalSold);
 
             double incomingUnsoldOpening = 0.0;
             double incomingUnsoldNew = round(incomingNewByGroup.getOrDefault(key, 0.0));
