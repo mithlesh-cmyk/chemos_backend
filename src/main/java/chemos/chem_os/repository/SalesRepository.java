@@ -11,15 +11,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecificationExecutor<Sales> {
 
-    @Query("SELECT s FROM Sales s WHERE " +
-            "(:productId IS NULL OR s.product.id = :productId) AND " +
-            "(:companyTo IS NULL OR s.companyTo = :companyTo) AND " +
-            "(:port IS NULL OR s.port = :port) AND " +
-            "s.date >= :startDate AND s.date <= :endDate")
+    Optional<Sales> findByIdAndIsActiveTrue(String id);
+
+    boolean existsByIdAndIsActiveTrue(String id);
+
+    @Query("""
+    SELECT s
+    FROM Sales s
+    WHERE s.isActive = true
+      AND (:productId IS NULL OR s.product.id = :productId)
+      AND (:companyTo IS NULL OR s.companyTo = :companyTo)
+      AND (:port IS NULL OR s.port = :port)
+      AND s.date >= :startDate
+      AND s.date <= :endDate
+    """)
     Page<Sales> findWithFilters(
             @Param("productId") String productId,
             @Param("companyTo") String companyTo,
@@ -40,6 +51,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         WHERE s.marketStatus = 'ready'
           AND s.date = :onDate
           AND s.status.id = 'CONFIRMED'
+          AND s.isActive = true
         GROUP BY
             UPPER(TRIM(s.vesselName)),
             UPPER(TRIM(s.product.name)),
@@ -53,8 +65,23 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
         FROM Sales s
         LEFT JOIN s.port port
+            WHERE s.marketStatus = 'ready'
+            AND s.status.id = 'CONFIRMED'
+            AND s.isActive = true
+            AND s.confirmedAt > :after
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumReadyMarketSoldAfter(
+            @Param("after") LocalDateTime after);
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
         WHERE s.marketStatus = 'ready'
           AND s.status.id = 'CONFIRMED'
+          AND s.isActive = true
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumReadyMarketSoldAllTimeByGroup();
@@ -65,6 +92,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
     FROM Sales s
     LEFT JOIN s.port port
     WHERE s.marketStatus = 'incoming'
+    AND s.isActive = true
       AND CAST(s.confirmedAt AS date) = :onDate
       AND s.status.id = 'CONFIRMED'
     GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
@@ -78,6 +106,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'incoming'
           AND s.status.id = 'CONFIRMED'
+          AND s.isActive = true
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldAllTimeByGroup();
@@ -88,6 +117,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'incoming'
           AND s.status.id = 'CONFIRMED'
+          AND s.isActive = true
           AND UPPER(TRIM(s.vesselName)) = :vesselName
           AND UPPER(TRIM(s.product.name)) = :product
           AND UPPER(TRIM(port.displayName)) = :port
@@ -105,6 +135,20 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         LEFT JOIN s.port port
         WHERE s.companyFrom IS NOT NULL
           AND s.status.id = 'CONFIRMED'
+          AND s.isActive = true
         """)
     List<VesselGroupCompany> findCompanyFromByGroup();
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
+        WHERE s.marketStatus = 'incoming'
+          AND s.status.id = 'CONFIRMED'
+          AND s.isActive = true
+          AND s.confirmedAt > :after
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumIncomingSoldAfter(@Param("after") LocalDateTime after);
 }

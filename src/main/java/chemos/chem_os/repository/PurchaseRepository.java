@@ -10,10 +10,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, String>, JpaSpecificationExecutor<Purchase> {
 
     List<Purchase> findByStatus_Id(String statusId);
+    Optional<Purchase> findByIdAndIsActiveTrue(String id);
+    List<Purchase> findByStatus_IdAndIsActiveTrue(String statusId);
+    boolean existsByIdAndIsActiveTrue(String id);
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
@@ -21,6 +25,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
+          AND p.isActive = true
           AND CAST(p.confirmedAt AS date) = :onDate
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
@@ -32,6 +37,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
+          AND p.isActive = true
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingAllTimeByGroup();
@@ -41,6 +47,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
+          AND p.isActive = true
           AND UPPER(TRIM(p.vesselName)) = :vesselName
           AND UPPER(TRIM(p.product.name)) = :product
           AND UPPER(TRIM(p.dischargePort.displayName)) = :port
@@ -57,6 +64,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.companyTo IS NOT NULL
           AND p.status.id = 'CONFIRMED'
+          AND p.isActive = true
         """)
     List<VesselGroupCompany> findCompanyToByGroup();
 
@@ -70,6 +78,7 @@ SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
 FROM Purchase p
 WHERE LOWER(TRIM(p.marketStatus)) = 'ready'
   AND p.status.id = 'CONFIRMED'
+  AND p.isActive = true
 GROUP BY
     UPPER(TRIM(p.vesselName)),
     UPPER(TRIM(p.product.name)),
@@ -87,6 +96,7 @@ SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
 FROM Purchase p
 WHERE LOWER(TRIM(p.marketStatus)) = 'ready'
   AND p.status.id = 'CONFIRMED'
+  AND p.isActive = true
   AND CAST(p.confirmedAt AS date) = :onDate
 GROUP BY
     UPPER(TRIM(p.vesselName)),
@@ -94,4 +104,12 @@ GROUP BY
     UPPER(TRIM(p.dischargePort.displayName))
 """)
     List<VesselStockGroupAggregate> sumPhysicalReadyByGroup(@Param("onDate") LocalDate onDate);
+
+    @Query("""
+    SELECT p
+    FROM Purchase p
+    WHERE p.id IN :ids
+      AND p.isActive = true
+""")
+    List<Purchase> findAllActiveById(@Param("ids") List<String> ids);
 }

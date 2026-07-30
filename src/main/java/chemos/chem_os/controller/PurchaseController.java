@@ -176,4 +176,14 @@ public class PurchaseController {
         );
     }
 
+    @PreAuthorize("hasAuthority('PURCHASE_EDIT')")
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivatePurchase(
+            @PathVariable String id) {
+
+        purchaseService.deactivatePurchase(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

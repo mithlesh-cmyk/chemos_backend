@@ -94,6 +94,13 @@ public class SalesController {
         return ResponseEntity.ok(result);
     }
 
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateSale(@PathVariable String id) {
+        salesService.deactivateSale(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportSales() {
