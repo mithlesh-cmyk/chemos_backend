@@ -24,5 +24,7 @@ public record UpdateSaleRequest(
         String vesselName,
         String remarks,
         String salesPerson,
-        String brokerName
+        String brokerName,
+        Double liftedQty,
+        Double remainingQty
 ) {}

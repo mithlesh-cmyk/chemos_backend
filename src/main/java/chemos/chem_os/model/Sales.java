@@ -117,4 +117,14 @@ public class Sales {
 
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
+
+    @Column(name = "lifted_qty")
+    private Double liftedQty;
+
+    @Column(name = "remaining_qty")
+    private Double remainingQty;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 }

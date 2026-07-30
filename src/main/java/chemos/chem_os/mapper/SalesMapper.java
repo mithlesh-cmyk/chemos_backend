@@ -118,5 +118,7 @@ public class SalesMapper {
         sale.setRemarks(request.remarks());
         sale.setSalesPerson(resolveSalesperson(request.salesPerson()));
         sale.setBrokerName(request.brokerName());
+        sale.setLiftedQty(request.liftedQty());
+        sale.setRemainingQty(request.remainingQty());
     }
 }

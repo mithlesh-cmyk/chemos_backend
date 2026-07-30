@@ -146,4 +146,8 @@ public class Purchase {
 
     @Column(name = "pay_due_date")
     private LocalDate payDueDate;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 }
