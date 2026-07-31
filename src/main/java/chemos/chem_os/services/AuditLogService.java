@@ -59,7 +59,6 @@ public class AuditLogService {
 
             auditLogRepository.save(entry);
 
-
         } catch (Exception e) {
             log.error("Audit log write failed [action={} entity={} id={}]", action, entityType, entityId, e);
         }

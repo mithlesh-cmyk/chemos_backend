@@ -34,7 +34,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -68,8 +67,7 @@ public class SalesService {
     }
 
     public Page<Sales> getAllSales(String status, String product, Pageable pageable) {
-        Specification<Sales> spec =
-                (root, query, cb) -> cb.isTrue(root.get("isActive"));
+        Specification<Sales> spec = (root, query, cb) -> cb.conjunction();
         if (status != null && !status.isBlank()) {
             String statusFilter = status.trim();
             spec = spec.and((root, query, cb) -> {
@@ -94,7 +92,7 @@ public class SalesService {
     }
 
     public Sales getSaleById(String id) {
-        return salesRepository.findByIdAndIsActiveTrue(id)
+        return salesRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Sale not found with id: " + id
@@ -171,31 +169,6 @@ public class SalesService {
                 effectiveStart,
                 effectiveEnd,
                 pageable
-        );
-    }
-
-    public void deactivateSale(String id) {
-
-        Sales sale = salesRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Sale not found."
-                ));
-
-        sale.setIsActive(false);
-        sale.setUpdatedBy(currentUserService.getUsername());
-
-        salesRepository.save(sale);
-
-        auditLogService.log(
-                "DEACTIVATE",
-                "SALE",
-                sale.getId(),
-                null,
-                Map.of(
-                        "id", sale.getId(),
-                        "isActive", sale.getIsActive()
-                )
         );
     }
 

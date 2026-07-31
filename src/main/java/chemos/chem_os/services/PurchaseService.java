@@ -70,8 +70,7 @@ PurchaseService {
             String product,
             Pageable pageable) {
 
-        Specification<Purchase> spec =
-                (root, query, cb) -> cb.isTrue(root.get("isActive"));
+        Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
 
         if (status != null && !status.isBlank()) {
             String statusFilter = status.trim();
@@ -104,7 +103,7 @@ PurchaseService {
     }
 
     public Purchase getPurchaseById(String id) {
-        return purchaseRepository.findByIdAndIsActiveTrue(id)
+        return purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -112,7 +111,7 @@ PurchaseService {
     }
 
     public Purchase updatePurchase(String id, UpdatePurchaseRequest updateRequest) {
-        Purchase purchase = purchaseRepository.findByIdAndIsActiveTrue(id)
+        Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -129,7 +128,7 @@ PurchaseService {
             String id,
             UpdatePurchaseReceiptRequest request) {
 
-        Purchase purchase = purchaseRepository.findByIdAndIsActiveTrue(id)
+        Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -150,7 +149,7 @@ PurchaseService {
     }
 
     public Purchase confirmPurchase(String id) {
-        Purchase purchase = purchaseRepository.findByIdAndIsActiveTrue(id)
+        Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -164,7 +163,7 @@ PurchaseService {
     }
 
     public Purchase cancelPurchase(String id) {
-        Purchase purchase = purchaseRepository.findByIdAndIsActiveTrue(id)
+        Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -177,7 +176,7 @@ PurchaseService {
     }
 
     public Purchase unconfirmPurchase(String id) {
-        Purchase purchase = purchaseRepository.findByIdAndIsActiveTrue(id)
+        Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -200,7 +199,7 @@ PurchaseService {
     }
 
     public PurchaseComparisonResponse comparePurchases(List<String> purchaseIds) {
-        List<Purchase> purchases = purchaseRepository.findAllActiveById(purchaseIds);
+        List<Purchase> purchases = purchaseRepository.findAllById(purchaseIds);
 
         List<PurchaseComparisonItem> items = purchases.stream()
                 .map(p -> {
@@ -255,7 +254,7 @@ PurchaseService {
 
     @Transactional(readOnly = true)
     public byte[] exportPhysicalStockCsv() {
-        List<Purchase> purchases = purchaseRepository.findByStatus_IdAndIsActiveTrue("CONFIRMED");
+        List<Purchase> purchases = purchaseRepository.findByStatus_Id("CONFIRMED");
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
@@ -315,7 +314,7 @@ PurchaseService {
                     continue;
                 }
 
-                if (!purchaseRepository.existsByIdAndIsActiveTrue(purchaseId)) {
+                if (!purchaseRepository.existsById(purchaseId)) {
                     errors.add("Row " + record.getRecordNumber() + ": no purchase found for PURCHASE_ID=" + purchaseId);
                     skipped++;
                     continue;
@@ -392,29 +391,5 @@ PurchaseService {
     @Transactional(readOnly = true)
     public List<PhysicalStock> getStockUpdateSessionDetail(String user, LocalDateTime timestamp) {
         return physicalStockRepository.findByUpdatedByAndUpdatedAt(user, timestamp);
-    }
-
-    @Transactional
-    public void deactivatePurchase(String id) {
-
-        Purchase purchase = purchaseRepository
-                .findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase not found."
-                ));
-
-        purchase.setIsActive(false);
-        purchase.setUpdatedBy(currentUserService.getUsername());
-
-        purchaseRepository.save(purchase);
-
-        auditLogService.log(
-                "DEACTIVATE",
-                "PURCHASE",
-                purchase.getId(),
-                null,
-                purchase
-        );
     }
 }

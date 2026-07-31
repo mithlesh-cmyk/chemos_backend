@@ -123,8 +123,4 @@ public class Sales {
 
     @Column(name = "remaining_qty")
     private Double remainingQty;
-
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
 }
