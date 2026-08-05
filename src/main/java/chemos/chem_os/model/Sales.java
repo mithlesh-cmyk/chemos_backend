@@ -123,4 +123,7 @@ public class Sales {
 
     @Column(name = "remaining_qty")
     private Double remainingQty;
+
+    @Builder.Default
+    private Boolean completed = false;
 }

@@ -1,11 +1,15 @@
 package chemos.chem_os.services;
 
+<<<<<<< Updated upstream
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueByType;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
+=======
+import chemos.chem_os.dto.*;
+>>>>>>> Stashed changes
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.model.Status;
@@ -295,5 +299,58 @@ public class SalesService {
 
     private static String nullToEmpty(String value) {
         return value != null ? value : "";
+    }
+
+    @Transactional
+    public Sales updateLiftedQty(String id, UpdateLiftedQtyRequest request) {
+        Sales sale = getSaleById(id);
+
+        if (!"CONFIRMED".equals(sale.getStatus().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Lifted quantity can only be updated for CONFIRMED sales");
+        }
+
+        Double payload = request.liftedQty();
+        if (payload == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty is required");
+        }
+        if (payload < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty cannot be negative");
+        }
+
+        Sales snapshot = sale.toBuilder().build();
+
+        double currentLifted = sale.getLiftedQty() != null ? sale.getLiftedQty() : 0.0;
+        double newLifted = currentLifted + payload;
+        double newRemaining = sale.getQuantity() - newLifted;
+
+        sale.setLiftedQty(newLifted);
+        sale.setRemainingQty(newRemaining);
+        sale.setUpdatedBy(currentUserService.getUsername());
+
+        Sales saved = salesRepository.save(sale);
+        auditLogService.log("LIFT", "SALE", saved.getId(), snapshot, saved);
+        return saved;
+    }
+
+    @Transactional
+    public Sales markComplete(String id) {
+        Sales sale = getSaleById(id);
+
+        if (!"CONFIRMED".equals(sale.getStatus().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only CONFIRMED sales can be marked complete");
+        }
+        if (Boolean.TRUE.equals(sale.getCompleted())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Sale is already marked complete");
+        }
+
+        Sales snapshot = sale.toBuilder().build();
+        sale.setCompleted(true);
+        sale.setUpdatedBy(currentUserService.getUsername());
+
+        Sales saved = salesRepository.save(sale);
+        auditLogService.log("COMPLETE", "SALE", saved.getId(), snapshot, saved);
+        return saved;
     }
 }

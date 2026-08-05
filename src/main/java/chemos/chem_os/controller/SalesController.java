@@ -1,10 +1,14 @@
 package chemos.chem_os.controller;
 
+<<<<<<< Updated upstream
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
+=======
+import chemos.chem_os.dto.*;
+>>>>>>> Stashed changes
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +35,7 @@ public class SalesController {
 
     @PreAuthorize("hasAuthority('SALE_CREATE')")
     @PostMapping("/create/sales_order")
-    public ResponseEntity<Sales> salesForm(@RequestBody CreateSaleRequest salesRecord){
+    public ResponseEntity<Sales> salesForm(@RequestBody CreateSaleRequest salesRecord) {
         Sales savedSales = salesService.createSale(salesRecord);
         return ResponseEntity.ok(savedSales);
     }
@@ -47,7 +51,7 @@ public class SalesController {
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
     @GetMapping("/{id}")
-    public ResponseEntity<Sales> getSaleById(@PathVariable String id){
+    public ResponseEntity<Sales> getSaleById(@PathVariable String id) {
         Sales sales = salesService.getSaleById(id);
         return ResponseEntity.ok(sales);
     }
@@ -116,5 +120,17 @@ public class SalesController {
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SalesCsvImportResult> importSales(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(salesService.importSalesCsv(file));
+    }
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}/lifted")
+    public ResponseEntity<Sales> updateLiftedQty(@PathVariable String id, @RequestBody UpdateLiftedQtyRequest request) {
+        return ResponseEntity.ok(salesService.updateLiftedQty(id, request));
+    }
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<Sales> markComplete(@PathVariable String id) {
+        return ResponseEntity.ok(salesService.markComplete(id));
     }
 }

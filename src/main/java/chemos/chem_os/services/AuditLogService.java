@@ -5,6 +5,7 @@ import chemos.chem_os.auth.repository.UserRepository;
 import chemos.chem_os.model.AuditLog;
 import chemos.chem_os.repository.AuditLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -24,7 +26,10 @@ public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper;
+
+    private static final ObjectMapper AUDIT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
     @Transactional
     public void log(String action, String entityType, String entityId, Object dataBefore, Object dataAfter) {
@@ -52,8 +57,8 @@ public class AuditLogService {
                     .performedBy(username)
                     .performedByName(performedByName)
                     .performedByRole(performedByRole)
-                    .dataBefore(dataBefore != null ? objectMapper.writeValueAsString(dataBefore) : null)
-                    .dataAfter(dataAfter != null ? objectMapper.writeValueAsString(dataAfter) : null)
+                    .dataBefore(dataBefore != null ? AUDIT_MAPPER.writeValueAsString(dataBefore) : null)
+                    .dataAfter(dataAfter != null ? AUDIT_MAPPER.writeValueAsString(dataAfter) : null)
                     .performedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")))
                     .build();
 
