@@ -87,7 +87,11 @@ public class RevenueCsvService {
     }
 
     public RevenueCsvTotalResponse getTotalAmount() {
-        return new RevenueCsvTotalResponse(revenueCsvEntryRepository.sumAllAmounts());
+        RevenueCsvUpload latestUpload = revenueCsvUploadRepository.findTopByOrderByUploadedAtDesc()
+                .orElseThrow(() -> new IllegalArgumentException("No CSV uploads found"));
+
+        BigDecimal total = revenueCsvEntryRepository.sumAmountsByUploadId(latestUpload.getId());
+        return new RevenueCsvTotalResponse(total);
     }
 
     private List<RevenueCsvEntry> parseCsv(MultipartFile file) {
