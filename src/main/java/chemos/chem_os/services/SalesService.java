@@ -3,6 +3,8 @@ package chemos.chem_os.services;
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
+import chemos.chem_os.dto.SalesLiftedValueByType;
+import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.Sales;
@@ -170,6 +172,15 @@ public class SalesService {
                 effectiveEnd,
                 pageable
         );
+    }
+
+    @Transactional(readOnly = true)
+    public SalesLiftedValueSummary getLiftedValueSummary() {
+        List<SalesLiftedValueByType> byType = salesRepository.sumLiftedValueBySaleType();
+        double grandTotal = byType.stream()
+                .mapToDouble(SalesLiftedValueByType::totalValue)
+                .sum();
+        return new SalesLiftedValueSummary(grandTotal, byType);
     }
 
     @Transactional(readOnly = true)

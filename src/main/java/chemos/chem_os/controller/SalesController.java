@@ -3,6 +3,7 @@ package chemos.chem_os.controller;
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
+import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
@@ -92,6 +93,12 @@ public class SalesController {
         SalesFilterRequest filters = new SalesFilterRequest(productId, companyTo, port, startDate, endDate);
         Page<Sales> result = salesService.getFilteredSales(filters, pageable);
         return ResponseEntity.ok(result);
+    }
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/lifted-value-summary")
+    public ResponseEntity<SalesLiftedValueSummary> getLiftedValueSummary() {
+        return ResponseEntity.ok(salesService.getLiftedValueSummary());
     }
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")

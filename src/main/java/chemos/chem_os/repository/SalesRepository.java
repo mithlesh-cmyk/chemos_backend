@@ -1,5 +1,6 @@
 package chemos.chem_os.repository;
 
+import chemos.chem_os.dto.SalesLiftedValueByType;
 import chemos.chem_os.dto.VesselGroupCompany;
 import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.model.Sales;
@@ -107,4 +108,13 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
           AND s.status.id = 'CONFIRMED'
         """)
     List<VesselGroupCompany> findCompanyFromByGroup();
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.SalesLiftedValueByType(
+            s.salesType,
+            COALESCE(SUM(COALESCE(s.liftedQty, 0) * COALESCE(s.price, 0)), 0))
+        FROM Sales s
+        GROUP BY s.salesType
+        """)
+    List<SalesLiftedValueByType> sumLiftedValueBySaleType();
 }
