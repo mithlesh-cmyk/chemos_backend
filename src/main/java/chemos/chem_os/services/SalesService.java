@@ -1,15 +1,14 @@
 package chemos.chem_os.services;
 
-<<<<<<< Updated upstream
+
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueByType;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
-=======
+
 import chemos.chem_os.dto.*;
->>>>>>> Stashed changes
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.model.Status;
@@ -72,7 +71,7 @@ public class SalesService {
         return saved;
     }
 
-    public Page<Sales> getAllSales(String status, String product, Pageable pageable) {
+    public Page<Sales> getAllSales(String status, String product,  String search,Pageable pageable) {
         Specification<Sales> spec = (root, query, cb) -> cb.conjunction();
         if (status != null && !status.isBlank()) {
             String statusFilter = status.trim();
@@ -84,13 +83,77 @@ public class SalesService {
                 );
             });
         }
-        if (product != null && !product.isBlank()) {
-            String productFilter = product.trim();
+        if (search != null && !search.isBlank()) {
+
+            String cleanSearch = search.trim().toLowerCase();
+            String keyword = "%" + cleanSearch + "%";
+
             spec = spec.and((root, query, cb) -> {
+
                 var productJoin = root.join("product", JoinType.LEFT);
+                var portJoin = root.join("port", JoinType.LEFT);
+
                 return cb.or(
-                        cb.equal(productJoin.get("id"), productFilter),
-                        cb.equal(cb.lower(productJoin.get("name")), productFilter.toLowerCase())
+
+                        // ------------------------
+                        // Normal search
+                        // ------------------------
+
+                        cb.like(cb.lower(root.get("id")), keyword),
+
+                        cb.like(cb.lower(root.get("companyFrom")), keyword),
+
+                        cb.like(cb.lower(root.get("companyTo")), keyword),
+
+                        cb.like(cb.lower(productJoin.get("id")), keyword),
+
+                        cb.like(cb.lower(productJoin.get("name")), keyword),
+
+                        cb.like(cb.lower(portJoin.get("displayName")), keyword),
+
+                        // ------------------------
+                        // Typo / Fuzzy search
+                        // ------------------------
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(root.get("companyFrom")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.25
+                        ),
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(root.get("companyTo")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.25
+                        ),
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(productJoin.get("name")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.20
+                        ),
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(portJoin.get("displayName")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.25
+                        )
                 );
             });
         }

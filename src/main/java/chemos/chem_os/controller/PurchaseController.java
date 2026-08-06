@@ -45,15 +45,18 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/allPurchase")
     public ResponseEntity<ApiSuccessResponse<Page<Purchase>>> getAllPurchase(
-                    @RequestParam(required = false) String status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String product,
+            @RequestParam(required = false) String search,
             @PageableDefault(
                     size = 10,
                     sort = "createdAt",
                     direction = Sort.Direction.DESC
-            ) Pageable pageable) {
+            )
+            Pageable pageable) {
 
-        Page<Purchase> purchases = purchaseService.getAllPurchase(status, product, pageable);
+        Page<Purchase> purchases =
+                purchaseService.getAllPurchase(status, product, search, pageable);
 
         return ResponseEntity.ok(
                 ApiSuccessResponse.<Page<Purchase>>builder()
@@ -62,6 +65,7 @@ public class PurchaseController {
                         .build()
         );
     }
+
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/{id}")

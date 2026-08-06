@@ -68,6 +68,7 @@ PurchaseService {
     public Page<Purchase> getAllPurchase(
             String status,
             String product,
+            String search,
             Pageable pageable) {
 
         Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
@@ -99,9 +100,76 @@ PurchaseService {
             });
         }
 
+        if (search != null && !search.isBlank()) {
+
+            String cleanSearch = search.trim().toLowerCase();
+            String keyword = "%" + cleanSearch + "%";
+
+            spec = spec.and((root, query, cb) -> {
+
+                var productJoin = root.join("product", jakarta.persistence.criteria.JoinType.LEFT);
+                var dischargePortJoin = root.join("dischargePort", jakarta.persistence.criteria.JoinType.LEFT);
+
+                return cb.or(
+
+                        // Normal partial search
+                        cb.like(cb.lower(root.get("id")), keyword),
+
+                        cb.like(cb.lower(root.get("companyFrom")), keyword),
+
+                        cb.like(cb.lower(root.get("companyTo")), keyword),
+
+                        cb.like(cb.lower(productJoin.get("name")), keyword),
+
+                        cb.like(cb.lower(dischargePortJoin.get("displayName")), keyword),
+
+
+                        // Fuzzy / typo search
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(root.get("companyFrom")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.25
+                        ),
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(root.get("companyTo")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.25
+                        ),
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(productJoin.get("name")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.20
+                        ),
+
+                        cb.greaterThan(
+                                cb.function(
+                                        "similarity",
+                                        Double.class,
+                                        cb.lower(dischargePortJoin.get("displayName")),
+                                        cb.literal(cleanSearch)
+                                ),
+                                0.25
+                        )
+                );
+            });
+        }
         return purchaseRepository.findAll(spec, pageable);
     }
-
     public Purchase getPurchaseById(String id) {
         return purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(

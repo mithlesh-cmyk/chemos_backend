@@ -1,14 +1,12 @@
 package chemos.chem_os.controller;
-
-<<<<<<< Updated upstream
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
-=======
+
 import chemos.chem_os.dto.*;
->>>>>>> Stashed changes
+
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +43,9 @@ public class SalesController {
     public ResponseEntity<Page<Sales>> getAllSales(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String product,
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(salesService.getAllSales(status, product, pageable));
+        return ResponseEntity.ok(salesService.getAllSales(status, product,search, pageable));
     }
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")
