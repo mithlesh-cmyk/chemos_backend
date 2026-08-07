@@ -18,7 +18,8 @@ public record UserConfigResponse(
             boolean canView,
             boolean canCreate,
             boolean canEdit,
-            boolean canApprove
+            boolean canApprove,
+            boolean canDelete
     ) {}
 
     public record ModulesConfig(

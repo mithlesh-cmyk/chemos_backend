@@ -72,7 +72,7 @@ public class SalesService {
     }
 
     public Page<Sales> getAllSales(String status, String product,  String search,Pageable pageable) {
-        Specification<Sales> spec = (root, query, cb) -> cb.conjunction();
+        Specification<Sales> spec = (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
         if (status != null && !status.isBlank()) {
             String statusFilter = status.trim();
             spec = spec.and((root, query, cb) -> {
@@ -161,7 +161,7 @@ public class SalesService {
     }
 
     public Sales getSaleById(String id) {
-        return salesRepository.findById(id)
+        return salesRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Sale not found with id: " + id
@@ -252,7 +252,7 @@ public class SalesService {
 
     @Transactional(readOnly = true)
     public byte[] exportSalesCsv() {
-        List<Sales> sales = salesRepository.findAll();
+        List<Sales> sales = salesRepository.findByIsDeletedFalse();
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader(SALES_CSV_HEADERS)
@@ -319,7 +319,7 @@ public class SalesService {
                 }
                 saleId = saleId.trim();
 
-                Sales sale = salesRepository.findById(saleId).orElse(null);
+                Sales sale = salesRepository.findByIdAndIsDeletedFalse(saleId).orElse(null);
                 if (sale == null) {
                     errors.add("Row " + record.getRecordNumber() + ": no sale found for SALE_ID=" + saleId);
                     skipped++;
@@ -415,5 +415,14 @@ public class SalesService {
         Sales saved = salesRepository.save(sale);
         auditLogService.log("COMPLETE", "SALE", saved.getId(), snapshot, saved);
         return saved;
+    }
+
+    public void deleteSale(String id) {
+        Sales sale = getSaleById(id);
+        Sales snapshot = sale.toBuilder().build();
+        sale.setIsDeleted(true);
+        sale.setUpdatedBy(currentUserService.getUsername());
+        Sales saved = salesRepository.save(sale);
+        auditLogService.log("DELETE", "SALE", saved.getId(), snapshot, saved);
     }
 }

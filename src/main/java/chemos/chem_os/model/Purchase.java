@@ -146,4 +146,8 @@ public class Purchase {
 
     @Column(name = "pay_due_date")
     private LocalDate payDueDate;
+
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 }

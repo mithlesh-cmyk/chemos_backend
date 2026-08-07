@@ -180,4 +180,16 @@ public class PurchaseController {
         );
     }
 
+    @PreAuthorize("hasAuthority('PURCHASE_DELETE')")
+    @PatchMapping("/{id}/delete")
+    public ResponseEntity<ApiSuccessResponse<Void>> deletePurchase(@PathVariable String id) {
+        purchaseService.deletePurchase(id);
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<Void>builder()
+                        .message("Purchase deleted successfully.")
+                        .data(null)
+                        .build()
+        );
+    }
+
 }

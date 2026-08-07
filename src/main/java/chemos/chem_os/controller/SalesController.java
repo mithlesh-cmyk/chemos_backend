@@ -132,4 +132,16 @@ public class SalesController {
     public ResponseEntity<Sales> markComplete(@PathVariable String id) {
         return ResponseEntity.ok(salesService.markComplete(id));
     }
+
+    @PreAuthorize("hasAuthority('SALE_DELETE')")
+    @PatchMapping("/{id}/delete")
+    public ResponseEntity<ApiSuccessResponse<Void>> deleteSale(@PathVariable String id) {
+        salesService.deleteSale(id);
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<Void>builder()
+                        .message("Sale deleted successfully.")
+                        .data(null)
+                        .build()
+        );
+    }
 }

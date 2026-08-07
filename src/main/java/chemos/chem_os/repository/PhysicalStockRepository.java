@@ -38,15 +38,15 @@ public interface PhysicalStockRepository extends JpaRepository<PhysicalStock, St
     List<PhysicalStockSessionSummary> findSessionSummariesByUser(@Param("user") String user);
 
     @Query("""
-        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
-            UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(ps.physicalStock), 0))
-        FROM PhysicalStock ps
-        JOIN Purchase p ON p.id = ps.purchaseId
-        WHERE p.status.id = 'CONFIRMED'
-        GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
-        """)
-
-      List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
+    SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+        UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName)), COALESCE(SUM(ps.physicalStock), 0))
+    FROM PhysicalStock ps
+    JOIN Purchase p ON p.id = ps.purchaseId
+    WHERE p.status.id = 'CONFIRMED'
+      AND p.isDeleted = false
+    GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
+    """)
+    List<VesselStockGroupAggregate> sumPhysicalStockOpeningByGroup();
 
     @Query("""
     SELECT MAX(p.updatedAt)

@@ -71,7 +71,7 @@ PurchaseService {
             String search,
             Pageable pageable) {
 
-        Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
+        Specification<Purchase> spec = (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
 
         if (status != null && !status.isBlank()) {
             String statusFilter = status.trim();
@@ -171,7 +171,7 @@ PurchaseService {
         return purchaseRepository.findAll(spec, pageable);
     }
     public Purchase getPurchaseById(String id) {
-        return purchaseRepository.findById(id)
+        return purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -179,7 +179,7 @@ PurchaseService {
     }
 
     public Purchase updatePurchase(String id, UpdatePurchaseRequest updateRequest) {
-        Purchase purchase = purchaseRepository.findById(id)
+        Purchase purchase = purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -196,7 +196,7 @@ PurchaseService {
             String id,
             UpdatePurchaseReceiptRequest request) {
 
-        Purchase purchase = purchaseRepository.findById(id)
+        Purchase purchase = purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -217,7 +217,7 @@ PurchaseService {
     }
 
     public Purchase confirmPurchase(String id) {
-        Purchase purchase = purchaseRepository.findById(id)
+        Purchase purchase = purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -231,7 +231,7 @@ PurchaseService {
     }
 
     public Purchase cancelPurchase(String id) {
-        Purchase purchase = purchaseRepository.findById(id)
+        Purchase purchase = purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -244,7 +244,7 @@ PurchaseService {
     }
 
     public Purchase unconfirmPurchase(String id) {
-        Purchase purchase = purchaseRepository.findById(id)
+        Purchase purchase = purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
@@ -267,7 +267,7 @@ PurchaseService {
     }
 
     public PurchaseComparisonResponse comparePurchases(List<String> purchaseIds) {
-        List<Purchase> purchases = purchaseRepository.findAllById(purchaseIds);
+        List<Purchase> purchases = purchaseRepository.findByIdInAndIsDeletedFalse(purchaseIds);
 
         List<PurchaseComparisonItem> items = purchases.stream()
                 .map(p -> {
@@ -322,7 +322,7 @@ PurchaseService {
 
     @Transactional(readOnly = true)
     public byte[] exportPhysicalStockCsv() {
-        List<Purchase> purchases = purchaseRepository.findByStatus_Id("CONFIRMED");
+        List<Purchase> purchases = purchaseRepository.findByStatus_IdAndIsDeletedFalse("CONFIRMED");
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
@@ -382,7 +382,7 @@ PurchaseService {
                     continue;
                 }
 
-                if (!purchaseRepository.existsById(purchaseId)) {
+                if (!purchaseRepository.existsByIdAndIsDeletedFalse(purchaseId)) {
                     errors.add("Row " + record.getRecordNumber() + ": no purchase found for PURCHASE_ID=" + purchaseId);
                     skipped++;
                     continue;
@@ -459,5 +459,18 @@ PurchaseService {
     @Transactional(readOnly = true)
     public List<PhysicalStock> getStockUpdateSessionDetail(String user, LocalDateTime timestamp) {
         return physicalStockRepository.findByUpdatedByAndUpdatedAt(user, timestamp);
+    }
+
+    public void deletePurchase(String id) {
+        Purchase purchase = purchaseRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Purchase not found with id: " + id
+                ));
+        Purchase before = purchase.toBuilder().build();
+        purchase.setIsDeleted(true);
+        purchase.setUpdatedBy(currentUserService.getUsername());
+        Purchase saved = purchaseRepository.save(purchase);
+        auditLogService.log("DELETE", "PURCHASE", saved.getId(), before, saved);
     }
 }

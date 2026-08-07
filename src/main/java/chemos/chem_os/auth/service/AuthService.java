@@ -118,24 +118,28 @@ public class AuthService {
                         perms.contains("SALE_VIEW"),
                         perms.contains("SALE_CREATE"),
                         perms.contains("SALE_EDIT"),
-                        perms.contains("SALE_APPROVE")
+                        perms.contains("SALE_APPROVE"),
+                        perms.contains("SALE_DELETE")
                 ),
                 new ModuleAccess(
                         perms.contains("PURCHASE_VIEW"),
                         perms.contains("PURCHASE_CREATE"),
                         perms.contains("PURCHASE_EDIT"),
-                        perms.contains("PURCHASE_APPROVE")
+                        perms.contains("PURCHASE_APPROVE"),
+                        perms.contains("PURCHASE_DELETE")
                 ),
                 new ModuleAccess(
                         perms.contains("COMPANY_VIEW"),
                         perms.contains("COMPANY_CREATE"),
                         perms.contains("COMPANY_EDIT"),
+                        false,
                         false
                 ),
                 new ModuleAccess(
                         perms.contains("PRODUCT_VIEW"),
                         perms.contains("PRODUCT_CREATE"),
                         perms.contains("PRODUCT_EDIT"),
+                        false,
                         false
                 )
         );

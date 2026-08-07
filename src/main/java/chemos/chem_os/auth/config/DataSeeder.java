@@ -45,10 +45,12 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"pur_create",  "PURCHASE_CREATE",  "Create Purchases",  "PURCHASES"},
             new Object[]{"pur_edit",    "PURCHASE_EDIT",    "Edit Purchases",    "PURCHASES"},
             new Object[]{"pur_approve", "PURCHASE_APPROVE", "Approve Purchases", "PURCHASES"},
+            new Object[]{"pur_delete",  "PURCHASE_DELETE",  "Delete Purchases",  "PURCHASES"},
             new Object[]{"sale_view",   "SALE_VIEW",        "View Sales",        "SALES"},
             new Object[]{"sale_create", "SALE_CREATE",      "Create Sales",      "SALES"},
             new Object[]{"sale_edit",   "SALE_EDIT",        "Edit Sales",        "SALES"},
             new Object[]{"sale_approve","SALE_APPROVE",     "Approve Sales",     "SALES"},
+            new Object[]{"sale_delete", "SALE_DELETE",      "Delete Sales",      "SALES"},
             new Object[]{"comp_view",   "COMPANY_VIEW",     "View Company",      "COMPANY"},
             new Object[]{"comp_create", "COMPANY_CREATE",   "Create Company",    "COMPANY"},
             new Object[]{"comp_edit",   "COMPANY_EDIT",     "Edit Company",      "COMPANY"},
@@ -59,6 +61,7 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"role_mgmt",   "ROLE_MANAGEMENT",  "Role Management",   "ADMIN"},
             new Object[]{"stock_stats_view", "STOCK_STATS_VIEW", "View Vessel Stock Stats", "STOCK"}
     );
+
 
     @Override
     @Transactional

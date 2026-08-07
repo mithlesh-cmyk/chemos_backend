@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecificationExecutor<Sales> {
 
@@ -21,6 +22,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             "(:productId IS NULL OR s.product.id = :productId) AND " +
             "(:companyTo IS NULL OR s.companyTo = :companyTo) AND " +
             "(:port IS NULL OR s.port = :port) AND " +
+            "s.isDeleted = false AND " +
             "s.date >= :startDate AND s.date <= :endDate")
     Page<Sales> findWithFilters(
             @Param("productId") String productId,
@@ -39,9 +41,15 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             COALESCE(SUM(s.quantity), 0))
         FROM Sales s
         LEFT JOIN s.port port
+<<<<<<< Updated upstream
         WHERE s.marketStatus = 'ready'
           AND s.date <= :onDate
+=======
+            WHERE s.marketStatus = 'ready'
+          AND s.date = :onDate
+>>>>>>> Stashed changes
           AND s.status.id = 'CONFIRMED'
+          AND s.isDeleted = false
         GROUP BY
             UPPER(TRIM(s.vesselName)),
             UPPER(TRIM(s.product.name)),
@@ -56,7 +64,8 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         FROM Sales s
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'ready'
-          AND s.status.id = 'CONFIRMED'
+                                         AND s.status.id = 'CONFIRMED'
+                                         AND s.isDeleted = false
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumReadyMarketSoldAllTimeByGroup();
@@ -82,6 +91,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
     WHERE s.marketStatus = 'incoming'
       AND CAST(s.confirmedAt AS date) = :onDate
       AND s.status.id = 'CONFIRMED'
+      AND s.isDeleted = false
     GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
     """)
     List<VesselStockGroupAggregate> sumIncomingSoldByGroup(@Param("onDate") LocalDate onDate);
@@ -93,6 +103,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'incoming'
           AND s.status.id = 'CONFIRMED'
+                   AND s.isDeleted = false
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldAllTimeByGroup();
@@ -113,12 +124,13 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         SELECT COALESCE(SUM(s.quantity), 0)
         FROM Sales s
         LEFT JOIN s.port port
-        WHERE s.marketStatus = 'incoming'
-          AND s.status.id = 'CONFIRMED'
-          AND UPPER(TRIM(s.vesselName)) = :vesselName
-          AND UPPER(TRIM(s.product.name)) = :product
-          AND UPPER(TRIM(port.displayName)) = :port
-          AND CAST(s.confirmedAt AS date) < :beforeDate
+            WHERE s.marketStatus = 'incoming'
+                                                         AND s.status.id = 'CONFIRMED'
+                                                         AND UPPER(TRIM(s.vesselName)) = :vesselName
+                                                         AND UPPER(TRIM(s.product.name)) = :product
+                                                         AND UPPER(TRIM(port.displayName)) = :port
+                                                         AND CAST(s.confirmedAt AS date) < :beforeDate
+                                                         AND s.isDeleted = false
         """)
     double sumIncomingConfirmedBefore(@Param("vesselName") String vesselName,
                                       @Param("product") String product,
@@ -126,13 +138,14 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
                                       @Param("beforeDate") LocalDate beforeDate);
 
     @Query("""
-        SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
-            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), TRIM(s.companyFrom))
-        FROM Sales s
-        LEFT JOIN s.port port
-        WHERE s.companyFrom IS NOT NULL
-          AND s.status.id = 'CONFIRMED'
-        """)
+    SELECT DISTINCT new chemos.chem_os.dto.VesselGroupCompany(
+        UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), TRIM(s.companyFrom))
+    FROM Sales s
+    LEFT JOIN s.port port
+    WHERE s.companyFrom IS NOT NULL
+      AND s.status.id = 'CONFIRMED'
+      AND s.isDeleted = false
+    """)
     List<VesselGroupCompany> findCompanyFromByGroup();
 
     @Query("""
@@ -140,7 +153,11 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             s.salesType,
             COALESCE(SUM(COALESCE(s.liftedQty, 0) * COALESCE(s.price, 0)), 0))
         FROM Sales s
+                WHERE s.isDeleted = false
         GROUP BY s.salesType
         """)
     List<SalesLiftedValueByType> sumLiftedValueBySaleType();
+
+    Optional<Sales> findByIdAndIsDeletedFalse(String id);
+    List<Sales> findByIsDeletedFalse();
 }
