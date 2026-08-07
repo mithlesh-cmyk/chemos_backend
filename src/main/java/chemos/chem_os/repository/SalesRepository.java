@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecificationExecutor<Sales> {
@@ -39,7 +40,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         FROM Sales s
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'ready'
-          AND s.date = :onDate
+          AND s.date <= :onDate
           AND s.status.id = 'CONFIRMED'
         GROUP BY
             UPPER(TRIM(s.vesselName)),
@@ -59,6 +60,19 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumReadyMarketSoldAllTimeByGroup();
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
+            WHERE s.marketStatus = 'ready'
+            AND s.status.id = 'CONFIRMED'
+            AND s.confirmedAt > :after
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumReadyMarketSoldAfter(
+            @Param("after") LocalDateTime after);
 
     @Query("""
     SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
@@ -82,6 +96,18 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldAllTimeByGroup();
+
+    @Query("""
+        SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
+            UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName)), COALESCE(SUM(s.quantity), 0))
+        FROM Sales s
+        LEFT JOIN s.port port
+        WHERE s.marketStatus = 'incoming'
+          AND s.status.id = 'CONFIRMED'
+          AND s.confirmedAt > :after
+        GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
+        """)
+    List<VesselStockGroupAggregate> sumIncomingSoldAfter(@Param("after") LocalDateTime after);
 
     @Query("""
         SELECT COALESCE(SUM(s.quantity), 0)
