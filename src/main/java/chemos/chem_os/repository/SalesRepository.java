@@ -39,7 +39,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         FROM Sales s
         LEFT JOIN s.port port
         WHERE s.marketStatus = 'ready'
-          AND s.date = :onDate
+          AND s.date <= :onDate
           AND s.status.id = 'CONFIRMED'
         GROUP BY
             UPPER(TRIM(s.vesselName)),
