@@ -1,6 +1,7 @@
 package chemos.chem_os.services;
 
 import chemos.chem_os.dto.CreateSaleRequest;
+import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueByType;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
@@ -11,17 +12,29 @@ import chemos.chem_os.model.Status;
 import chemos.chem_os.repository.SalesRepository;
 import chemos.chem_os.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import jakarta.persistence.criteria.JoinType;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -29,6 +42,15 @@ import java.util.List;
 public class SalesService {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
+
+    private static final String[] SALES_CSV_HEADERS = {
+            "SALE_ID", "DATE", "SALE_TYPE", "COMPANY_TO", "COMPANY_FROM",
+            "PRODUCT", "QUANTITY", "PRICE", "PAYMENT_TERM", "DELIVERY_TERM",
+            "PORT", "MARKET_PRICE", "MARKET_STATUS", "STORAGE_DAYS", "MAKE",
+            "PACKAGING", "ORIGIN", "TRANSIT_TOLERANCE", "MESSAGE", "VESSEL_NAME",
+            "REMARKS", "SALES_PERSON", "BROKER_NAME", "STATUS",
+            "LIFTED_QTY", "REMAINING_QTY"
+    };
 
     private final SalesRepository salesRepository;
     private final SalesMapper salesMapper;
