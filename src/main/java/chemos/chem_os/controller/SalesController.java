@@ -2,6 +2,7 @@ package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesFilterRequest;
+import chemos.chem_os.dto.SalesLiftedValueSummary;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
@@ -88,5 +89,28 @@ public class SalesController {
         SalesFilterRequest filters = new SalesFilterRequest(productId, companyTo, port, startDate, endDate);
         Page<Sales> result = salesService.getFilteredSales(filters, pageable);
         return ResponseEntity.ok(result);
+    }
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/lifted-value-summary")
+    public ResponseEntity<SalesLiftedValueSummary> getLiftedValueSummary() {
+        return ResponseEntity.ok(salesService.getLiftedValueSummary());
+    }
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportSales() {
+        byte[] csv = salesService.exportSalesCsv();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sales.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<SalesCsvImportResult> importSales(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(salesService.importSalesCsv(file));
     }
 }

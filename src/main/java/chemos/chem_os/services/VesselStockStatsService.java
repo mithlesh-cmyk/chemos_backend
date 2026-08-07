@@ -203,7 +203,19 @@ public class VesselStockStatsService {
                     companyByProductPort.getOrDefault(key, salesCompanyByProductPort.getOrDefault(key, ""))
             ));
         }
-        return results;
+        return results.stream().filter(r -> !isAllZero(r)).toList();
+    }
+
+    private static boolean isAllZero(ProductStockBreakdownResponse r) {
+        return r.physicalReady() == 0.0
+                && r.physicalStock() == 0.0
+                && r.physicalSold() == 0.0
+                && r.physicalUnsold() == 0.0
+                && r.incomingStock() == 0.0
+                && r.purchaseIncoming() == 0.0
+                && r.incomingSales() == 0.0
+                && r.incomingBalance() == 0.0
+                && r.totalStock() == 0.0;
     }
 
     private static double round(double value) {
@@ -279,7 +291,7 @@ public class VesselStockStatsService {
                     companyByProductPort.getOrDefault(key, salesCompanyByProductPort.getOrDefault(key, ""))
             ));
         }
-        return results;
+        return results.stream().filter(r -> !isAllZero(r)).toList();
     }
 
     private Map<ProductPortKey, String> toProductPortCompanyMap(List<VesselGroupCompany> rows) {
