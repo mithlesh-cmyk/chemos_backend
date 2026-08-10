@@ -35,8 +35,8 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
-<<<<<<< Updated upstream
           AND p.confirmedAt > :after
+          AND p.isDeleted = false
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingNewAfter(@Param("after") LocalDateTime after);
@@ -47,9 +47,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, String>, Jpa
         FROM Purchase p
         WHERE p.marketStatus = 'incoming'
           AND p.status.id = 'CONFIRMED'
-=======
-                  AND p.isDeleted = false
->>>>>>> Stashed changes
+          AND p.isDeleted = false
         GROUP BY UPPER(TRIM(p.vesselName)), UPPER(TRIM(p.product.name)), UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingAllTimeByGroup();
@@ -117,7 +115,6 @@ GROUP BY
 """)
     List<VesselStockGroupAggregate> sumPhysicalReadyByGroup(@Param("onDate") LocalDate onDate);
 
-<<<<<<< Updated upstream
     @Query("""
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
             UPPER(TRIM(p.vesselName)),
@@ -129,17 +126,16 @@ GROUP BY
         WHERE LOWER(TRIM(p.marketStatus)) = 'ready'
           AND p.status.id = 'CONFIRMED'
           AND p.confirmedAt > :after
+          AND p.isDeleted = false
         GROUP BY
             UPPER(TRIM(p.vesselName)),
             UPPER(TRIM(p.product.name)),
             UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumPhysicalReadyAfter(@Param("after") LocalDateTime after);
-=======
     Optional<Purchase> findByIdAndIsDeletedFalse(String id);
 
     List<Purchase> findByStatus_IdAndIsDeletedFalse(String statusId); //status-confirm
     List<Purchase> findByIdInAndIsDeletedFalse(List<String> ids);
     boolean existsByIdAndIsDeletedFalse(String id); //import
->>>>>>> Stashed changes
 }
