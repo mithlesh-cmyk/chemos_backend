@@ -41,13 +41,8 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             COALESCE(SUM(s.quantity), 0))
         FROM Sales s
         LEFT JOIN s.port port
-<<<<<<< Updated upstream
-        WHERE s.marketStatus = 'ready'
-          AND s.date <= :onDate
-=======
             WHERE s.marketStatus = 'ready'
           AND s.date = :onDate
->>>>>>> Stashed changes
           AND s.status.id = 'CONFIRMED'
           AND s.isDeleted = false
         GROUP BY
