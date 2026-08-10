@@ -42,7 +42,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         FROM Sales s
         LEFT JOIN s.port port
             WHERE s.marketStatus = 'ready'
-          AND s.date = :onDate
+          AND s.date <= :onDate
           AND s.status.id = 'CONFIRMED'
           AND s.isDeleted = false
         GROUP BY
@@ -73,6 +73,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             WHERE s.marketStatus = 'ready'
             AND s.status.id = 'CONFIRMED'
             AND s.confirmedAt > :after
+            AND s.isDeleted = false
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumReadyMarketSoldAfter(
@@ -111,6 +112,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
         WHERE s.marketStatus = 'incoming'
           AND s.status.id = 'CONFIRMED'
           AND s.confirmedAt > :after
+          AND s.isDeleted = false
         GROUP BY UPPER(TRIM(s.vesselName)), UPPER(TRIM(s.product.name)), UPPER(TRIM(port.displayName))
         """)
     List<VesselStockGroupAggregate> sumIncomingSoldAfter(@Param("after") LocalDateTime after);
