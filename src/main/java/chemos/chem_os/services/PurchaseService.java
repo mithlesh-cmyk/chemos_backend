@@ -70,6 +70,10 @@ PurchaseService {
             String product,
             Pageable pageable) {
 
+        return purchaseRepository.findAll(buildFilterSpecification(status, product), pageable);
+    }
+
+    private Specification<Purchase> buildFilterSpecification(String status, String product) {
         Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
 
         if (status != null && !status.isBlank()) {
@@ -99,7 +103,25 @@ PurchaseService {
             });
         }
 
-        return purchaseRepository.findAll(spec, pageable);
+        return spec;
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseReceivedValueResponse getTotalReceivedValue(String status, String product) {
+        List<Purchase> purchases = purchaseRepository.findAll(buildFilterSpecification(status, product));
+
+        BigDecimal totalValue = BigDecimal.ZERO;
+        long purchaseCount = 0;
+
+        for (Purchase p : purchases) {
+            if (p.getQuantityReceived() == null || p.getPriceInr() == null) {
+                continue;
+            }
+            totalValue = totalValue.add(BigDecimal.valueOf(p.getQuantityReceived()).multiply(p.getPriceInr()));
+            purchaseCount++;
+        }
+
+        return new PurchaseReceivedValueResponse(totalValue, purchaseCount);
     }
 
     public Purchase getPurchaseById(String id) {
