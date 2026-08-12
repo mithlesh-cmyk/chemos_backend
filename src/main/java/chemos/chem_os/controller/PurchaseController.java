@@ -68,6 +68,22 @@ public class PurchaseController {
 
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
+    @GetMapping("/received-value")
+    public ResponseEntity<ApiSuccessResponse<PurchaseReceivedValueResponse>> getTotalReceivedValue(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String product) {
+
+        PurchaseReceivedValueResponse response = purchaseService.getTotalReceivedValue(status, product);
+
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<PurchaseReceivedValueResponse>builder()
+                        .message("Total received value calculated successfully.")
+                        .data(response)
+                        .build()
+        );
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/{id}")
     public ResponseEntity<Purchase> getPurchaseById(@PathVariable String id) {
         Purchase purchase = purchaseService.getPurchaseById(id);

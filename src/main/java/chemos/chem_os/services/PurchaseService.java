@@ -27,7 +27,6 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -37,13 +36,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import jakarta.persistence.criteria.JoinType;
 
-import java.util.List;
-
-
 @Service
 @RequiredArgsConstructor
-public class
-PurchaseService {
+public class PurchaseService {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
     private final PurchaseRepository purchaseRepository;
@@ -71,6 +66,57 @@ PurchaseService {
             String search,
             Pageable pageable) {
 
+        Specification<Purchase> spec = buildFilterSpecification(status, product);
+
+        if (search != null && !search.isBlank()) {
+            String cleanSearch = search.trim().toLowerCase();
+            String keyword = "%" + cleanSearch + "%";
+
+            spec = spec.and((root, query, cb) -> {
+                var productJoin = root.join("product", JoinType.LEFT);
+                var dischargePortJoin = root.join("dischargePort", JoinType.LEFT);
+
+                return cb.or(
+                        // Normal partial search
+                        cb.like(cb.lower(root.get("id")), keyword),
+                        cb.like(cb.lower(root.get("companyFrom")), keyword),
+                        cb.like(cb.lower(root.get("companyTo")), keyword),
+                        cb.like(cb.lower(productJoin.get("name")), keyword),
+                        cb.like(cb.lower(dischargePortJoin.get("displayName")), keyword),
+
+                        // Fuzzy / typo search
+                        cb.greaterThan(
+                                cb.function("similarity", Double.class,
+                                        cb.lower(root.get("companyFrom")), cb.literal(cleanSearch)),
+                                0.25
+                        ),
+                        cb.greaterThan(
+                                cb.function("similarity", Double.class,
+                                        cb.lower(root.get("companyTo")), cb.literal(cleanSearch)),
+                                0.25
+                        ),
+                        cb.greaterThan(
+                                cb.function("similarity", Double.class,
+                                        cb.lower(productJoin.get("name")), cb.literal(cleanSearch)),
+                                0.20
+                        ),
+                        cb.greaterThan(
+                                cb.function("similarity", Double.class,
+                                        cb.lower(dischargePortJoin.get("displayName")), cb.literal(cleanSearch)),
+                                0.25
+                        )
+                );
+            });
+        }
+
+        return purchaseRepository.findAll(spec, pageable);
+    }
+
+    // NOTE (merge): dev's getAllPurchase had no `search` param — that fuzzy-match logic
+    // only ever existed on the soft-delete branch. Confirm with whoever owns `development`
+    // that this wasn't intentionally dropped before finalizing.
+
+    private Specification<Purchase> buildFilterSpecification(String status, String product) {
         Specification<Purchase> spec = (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
 
         if (status != null && !status.isBlank()) {
@@ -86,90 +132,36 @@ PurchaseService {
 
         if (product != null && !product.isBlank()) {
             String productFilter = product.trim();
-
             spec = spec.and((root, query, cb) -> {
                 var productJoin = root.join("product", JoinType.LEFT);
-
                 return cb.or(
                         cb.equal(productJoin.get("id"), productFilter),
-                        cb.equal(
-                                cb.lower(productJoin.get("name")),
-                                productFilter.toLowerCase()
-                        )
+                        cb.equal(cb.lower(productJoin.get("name")), productFilter.toLowerCase())
                 );
             });
         }
 
-        if (search != null && !search.isBlank()) {
-
-            String cleanSearch = search.trim().toLowerCase();
-            String keyword = "%" + cleanSearch + "%";
-
-            spec = spec.and((root, query, cb) -> {
-
-                var productJoin = root.join("product", jakarta.persistence.criteria.JoinType.LEFT);
-                var dischargePortJoin = root.join("dischargePort", jakarta.persistence.criteria.JoinType.LEFT);
-
-                return cb.or(
-
-                        // Normal partial search
-                        cb.like(cb.lower(root.get("id")), keyword),
-
-                        cb.like(cb.lower(root.get("companyFrom")), keyword),
-
-                        cb.like(cb.lower(root.get("companyTo")), keyword),
-
-                        cb.like(cb.lower(productJoin.get("name")), keyword),
-
-                        cb.like(cb.lower(dischargePortJoin.get("displayName")), keyword),
-
-
-                        // Fuzzy / typo search
-
-                        cb.greaterThan(
-                                cb.function(
-                                        "similarity",
-                                        Double.class,
-                                        cb.lower(root.get("companyFrom")),
-                                        cb.literal(cleanSearch)
-                                ),
-                                0.25
-                        ),
-
-                        cb.greaterThan(
-                                cb.function(
-                                        "similarity",
-                                        Double.class,
-                                        cb.lower(root.get("companyTo")),
-                                        cb.literal(cleanSearch)
-                                ),
-                                0.25
-                        ),
-
-                        cb.greaterThan(
-                                cb.function(
-                                        "similarity",
-                                        Double.class,
-                                        cb.lower(productJoin.get("name")),
-                                        cb.literal(cleanSearch)
-                                ),
-                                0.20
-                        ),
-
-                        cb.greaterThan(
-                                cb.function(
-                                        "similarity",
-                                        Double.class,
-                                        cb.lower(dischargePortJoin.get("displayName")),
-                                        cb.literal(cleanSearch)
-                                ),
-                                0.25
-                        )
-                );
-            });
-        }
-        return purchaseRepository.findAll(spec, pageable);
+        return spec;
     }
+
+    @Transactional(readOnly = true)
+    public PurchaseReceivedValueResponse getTotalReceivedValue(String status, String product) {
+        List<Purchase> purchases = purchaseRepository.findAll(buildFilterSpecification(status, product));
+
+        BigDecimal totalValue = BigDecimal.ZERO;
+        long purchaseCount = 0;
+
+        for (Purchase p : purchases) {
+            if (p.getQuantityReceived() == null || p.getPriceInr() == null) {
+                continue;
+            }
+            totalValue = totalValue.add(BigDecimal.valueOf(p.getQuantityReceived()).multiply(p.getPriceInr()));
+            purchaseCount++;
+        }
+
+        return new PurchaseReceivedValueResponse(totalValue, purchaseCount);
+    }
+
     public Purchase getPurchaseById(String id) {
         return purchaseRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -388,15 +380,6 @@ PurchaseService {
                     continue;
                 }
 
-                // upsert — overwrite if already exists for this purchase
-//                PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
-//                        .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
-//                entry.setPhysicalStock(stock);
-//                entry.setUpdatedAt(sessionTimestamp);
-//                entry.setUpdatedBy(currentUser);
-//                physicalStockRepository.save(entry);
-//                updated++;
-                //Changed the upsert behav. for storing old values
                 PhysicalStock entry = physicalStockRepository.findByPurchaseId(purchaseId)
                         .orElse(PhysicalStock.builder().purchaseId(purchaseId).build());
 
@@ -408,14 +391,13 @@ PurchaseService {
                     continue;
                 }
 
-// value changed — store previous, update current
+                // value changed — store previous, update current
                 entry.setPreviousStock(oldValue != -1 ? oldValue : null);
                 entry.setPhysicalStock(stock);
                 entry.setUpdatedAt(sessionTimestamp);
                 entry.setUpdatedBy(currentUser);
                 physicalStockRepository.save(entry);
                 updated++;
-
             }
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to parse CSV: " + e.getMessage());
@@ -426,7 +408,7 @@ PurchaseService {
 
         auditLogService.log("IMPORT", "PHYSICAL_STOCK", null, null, result);
 
-// Refresh inventory after successful physical stock import
+        // Refresh inventory after successful physical stock import
         if (updated > 0) { //handle empty physical stock csv
             inventoryService.refreshInventory();
         }
