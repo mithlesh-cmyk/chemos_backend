@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -84,6 +86,21 @@ public class CostCsvService {
         return costCsvEntryRepository.findByUploadId(uploadId).stream()
                 .map(e -> new CostCsvEntryResponse(e.getId(), e.getParticular(), e.getDirectCost(), e.getIndirectCost(), e.getCreatedBy()))
                 .toList();
+    }
+
+    public byte[] generateTemplateCsv() {
+        CSVFormat format = CSVFormat.DEFAULT.builder()
+                .setHeader("particular", "direct_cost", "indirect_cost")
+                .build();
+
+        StringWriter sw = new StringWriter();
+        try (CSVPrinter printer = new CSVPrinter(sw, format)) {
+            printer.printRecord("Freight", "1000.00", "0.00");
+            printer.printRecord("Handling", "0.00", "250.00");
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to generate CSV template: " + e.getMessage());
+        }
+        return sw.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public CostCsvTotalResponse getTotalCost() {

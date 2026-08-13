@@ -7,6 +7,7 @@ import chemos.chem_os.dto.CostCsvUploadResponse;
 import chemos.chem_os.services.CostCsvService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,17 @@ import java.util.List;
 public class CostCsvController {
 
     private final CostCsvService costCsvService;
+
+    @GetMapping("/template")
+    public ResponseEntity<byte[]> downloadTemplate() {
+        byte[] csv = costCsvService.generateTemplateCsv();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"cost_template.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiSuccessResponse<CostCsvUploadResponse>> uploadCsv(
