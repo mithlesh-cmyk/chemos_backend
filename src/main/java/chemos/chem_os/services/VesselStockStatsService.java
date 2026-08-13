@@ -6,6 +6,7 @@ import chemos.chem_os.dto.VesselStockGroupAggregate;
 import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
 import chemos.chem_os.model.IncomingUnsoldSnapshot;
+import chemos.chem_os.model.Purchase;
 import chemos.chem_os.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +91,7 @@ public class VesselStockStatsService {
 
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
+        Map<GroupKey, Purchase> latestPurchaseByGroup = computeLatestPurchaseByGroup();
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -112,12 +114,17 @@ public class VesselStockStatsService {
 
             double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
             String companyName = companyByGroup.getOrDefault(key, salesCompanyByGroup.get(key));
+            Purchase latestPurchase = latestPurchaseByGroup.get(key);
 
             results.add(new VesselStockStatsResponse(
                     key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
                     physicalStockOpening, physicalSold, physicalUnsoldClosing,
                     incomingUnsoldOpening, incomingUnsoldNew, incomingSold, incomingUnsoldClosing,
-                    totalStock, companyName
+                    totalStock, companyName,
+                    latestPurchase != null ? latestPurchase.getMarketPrice() : null,
+                    latestPurchase != null ? latestPurchase.getReplacementCost() : null,
+                    latestPurchase != null ? latestPurchase.getCreatedAt() : null,
+                    latestPurchase != null ? latestPurchase.getEta() : null
             ));
         }
         return results;
@@ -131,6 +138,7 @@ public class VesselStockStatsService {
         Map<GroupKey, Double> physicalReadyByGroup = toMap(purchaseRepository.sumPhysicalReadyByGroup());
         Map<GroupKey, String> companyByGroup = toCompanyMap(purchaseRepository.findCompanyToByGroup());
         Map<GroupKey, String> salesCompanyByGroup = toCompanyMap(salesRepository.findCompanyFromByGroup());
+        Map<GroupKey, Purchase> latestPurchaseByGroup = computeLatestPurchaseByGroup();
 
         Set<GroupKey> allGroups = new LinkedHashSet<>();
         allGroups.addAll(physicalOpeningByGroup.keySet());
@@ -153,15 +161,50 @@ public class VesselStockStatsService {
 
             double totalStock = round(physicalUnsoldClosing + incomingUnsoldClosing);
             String companyName = companyByGroup.getOrDefault(key, salesCompanyByGroup.get(key));
+            Purchase latestPurchase = latestPurchaseByGroup.get(key);
 
             results.add(new VesselStockStatsResponse(
                     key.vesselName(), cleanProductName(key.product()), key.dischargePort(),
                     physicalStockOpening, physicalSold, physicalUnsoldClosing,
                     incomingUnsoldOpening, incomingUnsoldNew, incomingSold, incomingUnsoldClosing,
-                    totalStock, companyName
+                    totalStock, companyName,
+                    latestPurchase != null ? latestPurchase.getMarketPrice() : null,
+                    latestPurchase != null ? latestPurchase.getReplacementCost() : null,
+                    latestPurchase != null ? latestPurchase.getCreatedAt() : null,
+                    latestPurchase != null ? latestPurchase.getEta() : null
             ));
         }
         return results;
+    }
+
+    private Map<GroupKey, Purchase> computeLatestPurchaseByGroup() {
+        Map<GroupKey, Purchase> latestByGroup = new LinkedHashMap<>();
+
+        for (Purchase p : purchaseRepository.findByStatus_Id("CONFIRMED")) {
+            if (p.getVesselName() == null || p.getProduct() == null || p.getProduct().getName() == null
+                    || p.getDischargePort() == null || p.getDischargePort().getDisplayName() == null) {
+                continue;
+            }
+
+            GroupKey key = new GroupKey(
+                    p.getVesselName().trim().toUpperCase(),
+                    p.getProduct().getName().trim().toUpperCase(),
+                    p.getDischargePort().getDisplayName().trim().toUpperCase());
+
+            Purchase existing = latestByGroup.get(key);
+            if (existing == null || isAfter(p.getCreatedAt(), existing.getCreatedAt())) {
+                latestByGroup.put(key, p);
+            }
+        }
+
+        return latestByGroup;
+    }
+
+    private boolean isAfter(LocalDateTime candidate, LocalDateTime current) {
+        if (candidate == null) {
+            return false;
+        }
+        return current == null || candidate.isAfter(current);
     }
 
     @Transactional(readOnly = true)
