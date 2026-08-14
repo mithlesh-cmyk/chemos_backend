@@ -8,6 +8,8 @@ public record ProductPortFinancialSummaryResponse(
         Double physicalStock,
         Double physicalUnsold,
         Double soldUnlifted,
+        Double quantityReceived,
+        String companyName,
         BigDecimal averageWeightedCost,
         BigDecimal averageWeightedSale
 ) {
