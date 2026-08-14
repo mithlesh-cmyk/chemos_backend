@@ -1,5 +1,6 @@
 package chemos.chem_os.services;
 
+import chemos.chem_os.dto.ProductPortFinancialSummaryResponse;
 import chemos.chem_os.dto.ProductStockBreakdownResponse;
 import chemos.chem_os.dto.VesselGroupCompany;
 import chemos.chem_os.dto.VesselStockGroupAggregate;
@@ -7,6 +8,7 @@ import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
 import chemos.chem_os.model.IncomingUnsoldSnapshot;
 import chemos.chem_os.model.Purchase;
+import chemos.chem_os.model.Sales;
 import chemos.chem_os.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -335,6 +337,84 @@ public class VesselStockStatsService {
             ));
         }
         return results.stream().filter(r -> !isAllZero(r)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductPortFinancialSummaryResponse> getProductFinancialSummary() {
+        Map<ProductPortKey, ProductStockBreakdownResponse> physicalByKey = getProductBreakdown().stream()
+                .collect(Collectors.toMap(
+                        r -> new ProductPortKey(r.product(), r.dischargePort()),
+                        r -> r,
+                        (a, b) -> a,
+                        LinkedHashMap::new));
+
+        Map<ProductPortKey, double[]> costAccumulator = new LinkedHashMap<>();
+        for (Purchase p : purchaseRepository.findByStatus_Id("CONFIRMED")) {
+            if (p.getProduct() == null || p.getProduct().getName() == null
+                    || p.getDischargePort() == null || p.getDischargePort().getDisplayName() == null
+                    || p.getPriceInr() == null || p.getQuantity() == null || p.getQuantity() == 0) {
+                continue;
+            }
+            ProductPortKey key = new ProductPortKey(
+                    cleanProductName(p.getProduct().getName().trim().toUpperCase()),
+                    p.getDischargePort().getDisplayName().trim().toUpperCase());
+            double[] acc = costAccumulator.computeIfAbsent(key, k -> new double[2]);
+            acc[0] += p.getPriceInr().doubleValue() * p.getQuantity();
+            acc[1] += p.getQuantity();
+        }
+
+        Map<ProductPortKey, double[]> saleAccumulator = new LinkedHashMap<>();
+        Map<ProductPortKey, Double> soldUnliftedByKey = new LinkedHashMap<>();
+        for (Sales s : salesRepository.findByStatus_Id("CONFIRMED")) {
+            if (s.getProduct() == null || s.getProduct().getName() == null
+                    || s.getPort() == null || s.getPort().getDisplayName() == null) {
+                continue;
+            }
+            ProductPortKey key = new ProductPortKey(
+                    cleanProductName(s.getProduct().getName().trim().toUpperCase()),
+                    s.getPort().getDisplayName().trim().toUpperCase());
+
+            if (s.getRemainingQty() != null) {
+                soldUnliftedByKey.merge(key, s.getRemainingQty(), Double::sum);
+            }
+
+            if (s.getPrice() != null && s.getLiftedQty() != null && s.getLiftedQty() != 0) {
+                double[] acc = saleAccumulator.computeIfAbsent(key, k -> new double[2]);
+                acc[0] += s.getPrice() * s.getLiftedQty();
+                acc[1] += s.getLiftedQty();
+            }
+        }
+
+        Set<ProductPortKey> allKeys = new LinkedHashSet<>();
+        allKeys.addAll(physicalByKey.keySet());
+        allKeys.addAll(costAccumulator.keySet());
+        allKeys.addAll(saleAccumulator.keySet());
+        allKeys.addAll(soldUnliftedByKey.keySet());
+
+        List<ProductPortFinancialSummaryResponse> results = new ArrayList<>();
+        for (ProductPortKey key : allKeys) {
+            ProductStockBreakdownResponse physical = physicalByKey.get(key);
+            double physicalStock = physical != null ? physical.physicalStock() : 0.0;
+            double physicalUnsold = physical != null ? physical.physicalUnsold() : 0.0;
+            double soldUnlifted = round(soldUnliftedByKey.getOrDefault(key, 0.0));
+
+            double[] costAcc = costAccumulator.get(key);
+            BigDecimal averageWeightedCost = costAcc != null && costAcc[1] != 0
+                    ? BigDecimal.valueOf(costAcc[0] / costAcc[1]).setScale(4, RoundingMode.HALF_UP)
+                    : null;
+
+            double[] saleAcc = saleAccumulator.get(key);
+            BigDecimal averageWeightedSale = saleAcc != null && saleAcc[1] != 0
+                    ? BigDecimal.valueOf(saleAcc[0] / saleAcc[1]).setScale(4, RoundingMode.HALF_UP)
+                    : null;
+
+            results.add(new ProductPortFinancialSummaryResponse(
+                    key.product(), key.dischargePort(),
+                    round(physicalStock), round(physicalUnsold), soldUnlifted,
+                    averageWeightedCost, averageWeightedSale
+            ));
+        }
+        return results;
     }
 
     private Map<ProductPortKey, String> toProductPortCompanyMap(List<VesselGroupCompany> rows) {
