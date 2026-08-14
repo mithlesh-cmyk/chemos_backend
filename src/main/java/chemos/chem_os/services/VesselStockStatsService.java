@@ -349,18 +349,25 @@ public class VesselStockStatsService {
                         LinkedHashMap::new));
 
         Map<ProductPortKey, double[]> costAccumulator = new LinkedHashMap<>();
+        Map<ProductPortKey, Double> quantityReceivedByKey = new LinkedHashMap<>();
         for (Purchase p : purchaseRepository.findByStatus_Id("CONFIRMED")) {
             if (p.getProduct() == null || p.getProduct().getName() == null
-                    || p.getDischargePort() == null || p.getDischargePort().getDisplayName() == null
-                    || p.getPriceInr() == null || p.getQuantity() == null || p.getQuantity() == 0) {
+                    || p.getDischargePort() == null || p.getDischargePort().getDisplayName() == null) {
                 continue;
             }
             ProductPortKey key = new ProductPortKey(
                     cleanProductName(p.getProduct().getName().trim().toUpperCase()),
                     p.getDischargePort().getDisplayName().trim().toUpperCase());
-            double[] acc = costAccumulator.computeIfAbsent(key, k -> new double[2]);
-            acc[0] += p.getPriceInr().doubleValue() * p.getQuantity();
-            acc[1] += p.getQuantity();
+
+            if (p.getQuantityReceived() != null) {
+                quantityReceivedByKey.merge(key, p.getQuantityReceived(), Double::sum);
+            }
+
+            if (p.getPriceInr() != null && p.getQuantity() != null && p.getQuantity() != 0) {
+                double[] acc = costAccumulator.computeIfAbsent(key, k -> new double[2]);
+                acc[0] += p.getPriceInr().doubleValue() * p.getQuantity();
+                acc[1] += p.getQuantity();
+            }
         }
 
         Map<ProductPortKey, double[]> saleAccumulator = new LinkedHashMap<>();
@@ -390,6 +397,7 @@ public class VesselStockStatsService {
         allKeys.addAll(costAccumulator.keySet());
         allKeys.addAll(saleAccumulator.keySet());
         allKeys.addAll(soldUnliftedByKey.keySet());
+        allKeys.addAll(quantityReceivedByKey.keySet());
 
         List<ProductPortFinancialSummaryResponse> results = new ArrayList<>();
         for (ProductPortKey key : allKeys) {
@@ -397,6 +405,8 @@ public class VesselStockStatsService {
             double physicalStock = physical != null ? physical.physicalStock() : 0.0;
             double physicalUnsold = physical != null ? physical.physicalUnsold() : 0.0;
             double soldUnlifted = round(soldUnliftedByKey.getOrDefault(key, 0.0));
+            double quantityReceived = round(quantityReceivedByKey.getOrDefault(key, 0.0));
+            String companyName = physical != null ? physical.companyName() : "";
 
             double[] costAcc = costAccumulator.get(key);
             BigDecimal averageWeightedCost = costAcc != null && costAcc[1] != 0
@@ -411,6 +421,7 @@ public class VesselStockStatsService {
             results.add(new ProductPortFinancialSummaryResponse(
                     key.product(), key.dischargePort(),
                     round(physicalStock), round(physicalUnsold), soldUnlifted,
+                    quantityReceived, companyName,
                     averageWeightedCost, averageWeightedSale
             ));
         }
