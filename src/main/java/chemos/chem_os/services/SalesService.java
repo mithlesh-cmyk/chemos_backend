@@ -368,9 +368,13 @@ public class SalesService {
     public Sales updateLiftedQty(String id, UpdateLiftedQtyRequest request) {
         Sales sale = getSaleById(id);
 
-        if (!"CONFIRMED".equals(sale.getStatus().getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Lifted quantity can only be updated for CONFIRMED sales");
+        if (!"CONFIRMED".equals(sale.getStatus().getId())
+                || !"ready".equalsIgnoreCase(sale.getMarketStatus())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Lifted quantity can only be updated for CONFIRMED and READY sales"
+            );
         }
 
         Double payload = request.liftedQty();
@@ -400,7 +404,8 @@ public class SalesService {
     public Sales markComplete(String id) {
         Sales sale = getSaleById(id);
 
-        if (!"CONFIRMED".equals(sale.getStatus().getId())) {
+        if (!"CONFIRMED".equals(sale.getStatus().getId())
+        ) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Only CONFIRMED sales can be marked complete");
         }
