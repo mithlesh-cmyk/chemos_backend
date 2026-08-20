@@ -29,4 +29,11 @@ public class CurrentUserService {
                 .map(user -> user.getRole().isSuperRole())
                 .orElse(false);
     }
+
+    // Roles like SALES_EXECUTIVE/PURCHASE_EXECUTIVE only see/act on records they created.
+    public boolean isRowScoped() {
+        return userRepository.findByUsername(getUsername())
+                .map(user -> user.getRole().isRestrictToOwnRecords())
+                .orElse(false);
+    }
 }
