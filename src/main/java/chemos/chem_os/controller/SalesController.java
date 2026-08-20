@@ -127,6 +127,14 @@ public class SalesController {
         return ResponseEntity.ok(salesService.updateLiftedQty(id, request));
     }
 
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/{id}/lifted-summary")
+    public ResponseEntity<SalesLiftedSummaryResponse> getLiftedSummary(
+            @PathVariable String id
+    ) {
+        return ResponseEntity.ok(salesService.getLiftedSummary(id));
+    }
+
     @PreAuthorize("hasAuthority('SALE_EDIT')")
     @PatchMapping("/{id}/complete")
     public ResponseEntity<Sales> markComplete(@PathVariable String id) {
@@ -144,4 +152,6 @@ public class SalesController {
                         .build()
         );
     }
+
+
 }

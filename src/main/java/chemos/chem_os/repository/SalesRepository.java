@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecificationExecutor<Sales> {
 
-    List<Sales> findByStatus_Id(String statusId);
+    List<Sales> findByStatus_IdAndIsDeletedFalse(String statusId);
 
     @Query("SELECT s FROM Sales s WHERE " +
             "(:productId IS NULL OR s.product.id = :productId) AND " +
@@ -148,15 +148,24 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
     List<VesselGroupCompany> findCompanyFromByGroup();
 
     @Query("""
-        SELECT new chemos.chem_os.dto.SalesLiftedValueByType(
-            s.salesType,
-            COALESCE(SUM(COALESCE(s.liftedQty, 0) * COALESCE(s.price, 0)), 0))
-        FROM Sales s
-                WHERE s.isDeleted = false
-        GROUP BY s.salesType
-        """)
+    SELECT new chemos.chem_os.dto.SalesLiftedValueByType(
+        s.salesType,
+        COALESCE(
+            SUM(
+                COALESCE(s.liftedQty, 0) * COALESCE(s.price, 0)
+            ),
+            0
+        )
+    )
+    FROM Sales s
+    WHERE s.isDeleted = false
+      AND s.status.id = 'CONFIRMED'
+      AND LOWER(TRIM(s.marketStatus)) = 'ready'
+    GROUP BY s.salesType
+    """)
     List<SalesLiftedValueByType> sumLiftedValueBySaleType();
 
     Optional<Sales> findByIdAndIsDeletedFalse(String id);
     List<Sales> findByIsDeletedFalse();
 }
+

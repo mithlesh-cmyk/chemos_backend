@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, String>, JpaSpecificationExecutor<Purchase> {
 
-    List<Purchase> findByStatus_Id(String statusId);
+    List<Purchase> findByStatus_IdAndIsDeletedFalse(String statusId);
 
     @Query("""
         SELECT new chemos.chem_os.dto.VesselStockGroupAggregate(
@@ -133,9 +133,8 @@ GROUP BY
             UPPER(TRIM(p.dischargePort.displayName))
         """)
     List<VesselStockGroupAggregate> sumPhysicalReadyAfter(@Param("after") LocalDateTime after);
-    Optional<Purchase> findByIdAndIsDeletedFalse(String id);
 
-    List<Purchase> findByStatus_IdAndIsDeletedFalse(String statusId); //status-confirm
+    Optional<Purchase> findByIdAndIsDeletedFalse(String id);
     List<Purchase> findByIdInAndIsDeletedFalse(List<String> ids);
     boolean existsByIdAndIsDeletedFalse(String id); //import
 }

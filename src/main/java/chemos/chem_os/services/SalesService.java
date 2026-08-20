@@ -364,63 +364,99 @@ public class SalesService {
         return value != null ? value : "";
     }
 
-    @Transactional
-    public Sales updateLiftedQty(String id, UpdateLiftedQtyRequest request) {
-        Sales sale = getSaleById(id);
+//    @Transactional
+//    public Sales updateLiftedQty(String id, UpdateLiftedQtyRequest request) {
+//        Sales sale = getSaleById(id);
+//
+//        if (!"CONFIRMED".equals(sale.getStatus().getId())
+//                || !"ready".equalsIgnoreCase(sale.getMarketStatus())) {
+//
+//            throw new ResponseStatusException(
+//                    HttpStatus.BAD_REQUEST,
+//                    "Lifted quantity can only be updated for CONFIRMED and READY sales"
+//            );
+//        }
+//
+//        Double payload = request.liftedQty();
+//        if (payload == null) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty is required");
+//        }
+//        if (payload < 0) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty cannot be negative");
+//        }
+//
+//        Sales snapshot = sale.toBuilder().build();
+//
+//        double newLifted = request.liftedQty();
+//        double newRemaining = sale.getQuantity() - newLifted;
+//
+//        sale.setLiftedQty(newLifted);
+//        sale.setRemainingQty(newRemaining);
+//        sale.setUpdatedBy(currentUserService.getUsername());
+//
+//        Sales saved = salesRepository.save(sale);
+//        auditLogService.log("LIFT", "SALE", saved.getId(), snapshot, saved);
+//        return saved;
+//    }
 
-        if (!"CONFIRMED".equals(sale.getStatus().getId())
-                || !"ready".equalsIgnoreCase(sale.getMarketStatus())) {
+//    @Transactional(readOnly = true)
+//    public SalesLiftedSummaryResponse getLiftedSummary(String id) {
+//
+//        Sales sale = getSaleById(id);
+//
+//        if (!"CONFIRMED".equals(sale.getStatus().getId())
+//                || !"ready".equalsIgnoreCase(sale.getMarketStatus())) {
+//
+//            throw new ResponseStatusException(
+//                    HttpStatus.BAD_REQUEST,
+//                    "Physical sold summary is available only for CONFIRMED and READY sales"
+//            );
+//        }
+//
+//        if (sale.getQuantity() == null) {
+//            throw new ResponseStatusException(
+//                    HttpStatus.INTERNAL_SERVER_ERROR,
+//                    "Sale quantity is missing for sale: " + id
+//            );
+//        }
+//
+//        double totalQuantity = sale.getQuantity();
+//
+//        double liftedQuantity =
+//                sale.getLiftedQty() != null
+//                        ? sale.getLiftedQty()
+//                        : 0.0;
+//
+//        double unliftedQuantity = totalQuantity - liftedQuantity;
+//
+//        return new SalesLiftedSummaryResponse(
+//                totalQuantity,
+//                liftedQuantity,
+//                unliftedQuantity
+//        );
+//    }
 
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Lifted quantity can only be updated for CONFIRMED and READY sales"
-            );
-        }
-
-        Double payload = request.liftedQty();
-        if (payload == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty is required");
-        }
-        if (payload < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty cannot be negative");
-        }
-
-        Sales snapshot = sale.toBuilder().build();
-
-        double currentLifted = sale.getLiftedQty() != null ? sale.getLiftedQty() : 0.0;
-        double newLifted = currentLifted + payload;
-        double newRemaining = sale.getQuantity() - newLifted;
-
-        sale.setLiftedQty(newLifted);
-        sale.setRemainingQty(newRemaining);
-        sale.setUpdatedBy(currentUserService.getUsername());
-
-        Sales saved = salesRepository.save(sale);
-        auditLogService.log("LIFT", "SALE", saved.getId(), snapshot, saved);
-        return saved;
-    }
-
-    @Transactional
-    public Sales markComplete(String id) {
-        Sales sale = getSaleById(id);
-
-        if (!"CONFIRMED".equals(sale.getStatus().getId())
-        ) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only CONFIRMED sales can be marked complete");
-        }
-        if (Boolean.TRUE.equals(sale.getCompleted())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Sale is already marked complete");
-        }
-
-        Sales snapshot = sale.toBuilder().build();
-        sale.setCompleted(true);
-        sale.setUpdatedBy(currentUserService.getUsername());
-
-        Sales saved = salesRepository.save(sale);
-        auditLogService.log("COMPLETE", "SALE", saved.getId(), snapshot, saved);
-        return saved;
-    }
+//    @Transactional
+//    public Sales markComplete(String id) {
+//        Sales sale = getSaleById(id);
+//
+//        if (!"CONFIRMED".equals(sale.getStatus().getId())
+//        ) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+//                    "Only CONFIRMED sales can be marked complete");
+//        }
+//        if (Boolean.TRUE.equals(sale.getCompleted())) {
+//            throw new ResponseStatusException(HttpStatus.CONFLICT, "Sale is already marked complete");
+//        }
+//
+//        Sales snapshot = sale.toBuilder().build();
+//        sale.setCompleted(true);
+//        sale.setUpdatedBy(currentUserService.getUsername());
+//
+//        Sales saved = salesRepository.save(sale);
+//        auditLogService.log("COMPLETE", "SALE", saved.getId(), snapshot, saved);
+//        return saved;
+//    }
 
     public void deleteSale(String id) {
         Sales sale = getSaleById(id);
@@ -431,3 +467,5 @@ public class SalesService {
         auditLogService.log("DELETE", "SALE", saved.getId(), snapshot, saved);
     }
 }
+
+

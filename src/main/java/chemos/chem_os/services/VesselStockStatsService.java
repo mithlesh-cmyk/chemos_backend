@@ -182,7 +182,7 @@ public class VesselStockStatsService {
     private Map<GroupKey, Purchase> computeLatestPurchaseByGroup() {
         Map<GroupKey, Purchase> latestByGroup = new LinkedHashMap<>();
 
-        for (Purchase p : purchaseRepository.findByStatus_Id("CONFIRMED")) {
+        for (Purchase p : purchaseRepository.findByStatus_IdAndIsDeletedFalse("CONFIRMED")) {
             if (p.getVesselName() == null || p.getProduct() == null || p.getProduct().getName() == null
                     || p.getDischargePort() == null || p.getDischargePort().getDisplayName() == null) {
                 continue;
@@ -350,7 +350,7 @@ public class VesselStockStatsService {
 
         Map<ProductPortKey, double[]> costAccumulator = new LinkedHashMap<>();
         Map<ProductPortKey, Double> quantityReceivedByKey = new LinkedHashMap<>();
-        for (Purchase p : purchaseRepository.findByStatus_Id("CONFIRMED")) {
+        for (Purchase p : purchaseRepository.findByStatus_IdAndIsDeletedFalse("CONFIRMED")) {
             if (p.getProduct() == null || p.getProduct().getName() == null
                     || p.getDischargePort() == null || p.getDischargePort().getDisplayName() == null) {
                 continue;
@@ -372,7 +372,7 @@ public class VesselStockStatsService {
 
         Map<ProductPortKey, double[]> saleAccumulator = new LinkedHashMap<>();
         Map<ProductPortKey, Double> soldUnliftedByKey = new LinkedHashMap<>();
-        for (Sales s : salesRepository.findByStatus_Id("CONFIRMED")) {
+        for (Sales s : salesRepository.findByStatus_IdAndIsDeletedFalse("CONFIRMED")) {
             if (s.getProduct() == null || s.getProduct().getName() == null
                     || s.getPort() == null || s.getPort().getDisplayName() == null) {
                 continue;

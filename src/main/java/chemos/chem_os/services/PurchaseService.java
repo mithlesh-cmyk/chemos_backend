@@ -111,8 +111,6 @@ public class PurchaseService {
 
         return purchaseRepository.findAll(spec, pageable);
     }
-
-    // NOTE (merge): dev's getAllPurchase had no `search` param — that fuzzy-match logic
     // only ever existed on the soft-delete branch. Confirm with whoever owns `development`
     // that this wasn't intentionally dropped before finalizing.
 
