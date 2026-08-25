@@ -17,6 +17,8 @@ import java.util.List;
 
 public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecificationExecutor<Sales> {
 
+    List<Sales> findByStatus_Id(String statusId);
+
     @Query("SELECT s FROM Sales s WHERE " +
             "(:productId IS NULL OR s.product.id = :productId) AND " +
             "(:companyTo IS NULL OR s.companyTo = :companyTo) AND " +

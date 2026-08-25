@@ -1,5 +1,6 @@
 package chemos.chem_os.controller;
 
+import chemos.chem_os.dto.ProductPortFinancialSummaryResponse;
 import chemos.chem_os.dto.ProductStockBreakdownResponse;
 import chemos.chem_os.dto.VesselStockStatsResponse;
 import chemos.chem_os.dto.VesselStockStatsSummaryResponse;
@@ -41,6 +42,12 @@ public class VesselStockStatsController {
     @GetMapping("/by-product")
     public ResponseEntity<List<ProductStockBreakdownResponse>> getStockStatsByProduct() {
         return ResponseEntity.ok(vesselStockStatsService.getProductBreakdown());
+    }
+
+    @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")
+    @GetMapping("/by-product/financial-summary")
+    public ResponseEntity<List<ProductPortFinancialSummaryResponse>> getProductFinancialSummary() {
+        return ResponseEntity.ok(vesselStockStatsService.getProductFinancialSummary());
     }
 
     @PreAuthorize("hasAuthority('STOCK_STATS_VIEW')")

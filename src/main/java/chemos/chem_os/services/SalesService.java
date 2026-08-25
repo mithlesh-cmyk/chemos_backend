@@ -5,6 +5,7 @@ import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueByType;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
+import chemos.chem_os.dto.UpdateLiftedQtyRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.mapper.SalesMapper;
 import chemos.chem_os.model.Sales;
@@ -149,6 +150,25 @@ public class SalesService {
         before.setUpdatedBy(currentUserService.getUsername());
         Sales saved = salesRepository.save(before);
         auditLogService.log("UNCONFIRM", "SALE", saved.getId(), snapshot, saved);
+        return saved;
+    }
+
+    public Sales updateLiftedQty(String id, UpdateLiftedQtyRequest request) {
+        Sales sale = getSaleById(id);
+        Double liftedQty = request.liftedQty();
+
+        if (liftedQty != null && liftedQty < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "liftedQty cannot be negative");
+        }
+
+        Sales snapshot = sale.toBuilder().build();
+        sale.setLiftedQty(liftedQty);
+        sale.setRemainingQty(
+                (sale.getQuantity() != null && liftedQty != null) ? sale.getQuantity() - liftedQty : null
+        );
+        sale.setUpdatedBy(currentUserService.getUsername());
+        Sales saved = salesRepository.save(sale);
+        auditLogService.log("UPDATE_LIFTED_QTY", "SALE", saved.getId(), snapshot, saved);
         return saved;
     }
 
