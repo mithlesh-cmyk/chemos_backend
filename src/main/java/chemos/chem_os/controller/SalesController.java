@@ -4,6 +4,7 @@ import chemos.chem_os.dto.CreateSaleRequest;
 import chemos.chem_os.dto.SalesCsvImportResult;
 import chemos.chem_os.dto.SalesFilterRequest;
 import chemos.chem_os.dto.SalesLiftedValueSummary;
+import chemos.chem_os.dto.UpdateLiftedQtyRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
@@ -74,6 +75,12 @@ public class SalesController {
     @PatchMapping("/{id}/unconfirm")
     public ResponseEntity<Sales> unconfirmSale(@PathVariable String id) {
         return ResponseEntity.ok(salesService.unconfirmSale(id));
+    }
+
+    @PreAuthorize("hasAuthority('SALE_EDIT')")
+    @PatchMapping("/{id}/lifted-qty")
+    public ResponseEntity<Sales> updateLiftedQty(@PathVariable String id, @RequestBody UpdateLiftedQtyRequest request) {
+        return ResponseEntity.ok(salesService.updateLiftedQty(id, request));
     }
 
     @GetMapping("/filter")
