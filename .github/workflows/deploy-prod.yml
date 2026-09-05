@@ -35,6 +35,7 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          TOTP_ENCRYPTION_KEY: ${{ secrets.TOTP_ENCRYPTION_KEY }}
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
@@ -47,6 +48,7 @@ jobs:
             printf 'DB_USERNAME=%s\n' "$DB_USERNAME"
             printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
             printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
+            printf 'TOTP_ENCRYPTION_KEY=%s\n' "$TOTP_ENCRYPTION_KEY"
             printf 'APP_ADMIN_USERNAME=%s\n' "$ADMIN_USERNAME"
             printf 'APP_ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
             printf 'APP_ADMIN_NAME=%s\n' "$ADMIN_NAME"
