@@ -103,6 +103,11 @@ PurchaseService {
             });
         }
 
+        if (currentUserService.isRowScoped()) {
+            String owner = currentUserService.getUsername();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("createdBy"), owner));
+        }
+
         return spec;
     }
 
@@ -124,20 +129,22 @@ PurchaseService {
         return new PurchaseReceivedValueResponse(totalValue, purchaseCount);
     }
 
+    // Shared fetch point for every single-record read/write below — the ownership check here
+    // covers update/confirm/cancel/unconfirm/receipt automatically since they all call this first.
     public Purchase getPurchaseById(String id) {
-        return purchaseRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase not found with id: " + id
-                ));
-    }
-
-    public Purchase updatePurchase(String id, UpdatePurchaseRequest updateRequest) {
         Purchase purchase = purchaseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Purchase not found with id: " + id
                 ));
+        if (currentUserService.isRowScoped() && !currentUserService.getUsername().equals(purchase.getCreatedBy())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this purchase");
+        }
+        return purchase;
+    }
+
+    public Purchase updatePurchase(String id, UpdatePurchaseRequest updateRequest) {
+        Purchase purchase = getPurchaseById(id);
         Purchase before = purchase.toBuilder().build();
         purchaseMapper.updateEntity(purchase, updateRequest);
         purchase.setUpdatedBy(currentUserService.getUsername());
@@ -150,11 +157,7 @@ PurchaseService {
             String id,
             UpdatePurchaseReceiptRequest request) {
 
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase not found with id: " + id
-                ));
+        Purchase purchase = getPurchaseById(id);
 
         Purchase before = purchase.toBuilder().build();
 
@@ -171,11 +174,7 @@ PurchaseService {
     }
 
     public Purchase confirmPurchase(String id) {
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase not found with id: " + id
-                ));
+        Purchase purchase = getPurchaseById(id);
         purchase.setStatus(resolveStatus("CONFIRMED"));
         purchase.setConfirmedAt(LocalDateTime.now(BUSINESS_ZONE));
         purchase.setUpdatedBy(currentUserService.getUsername());
@@ -185,11 +184,7 @@ PurchaseService {
     }
 
     public Purchase cancelPurchase(String id) {
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase not found with id: " + id
-                ));
+        Purchase purchase = getPurchaseById(id);
         purchase.setStatus(resolveStatus("CANCELLED"));
         purchase.setUpdatedBy(currentUserService.getUsername());
         Purchase saved = purchaseRepository.save(purchase);
@@ -198,11 +193,7 @@ PurchaseService {
     }
 
     public Purchase unconfirmPurchase(String id) {
-        Purchase purchase = purchaseRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Purchase not found with id: " + id
-                ));
+        Purchase purchase = getPurchaseById(id);
         if ("UNCONFIRMED".equals(purchase.getStatus().getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Purchase is already unconfirmed");
         }

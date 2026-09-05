@@ -35,3 +35,6 @@ build/
 ### Secrets ###
 # application-prod.properties is safe to commit — it only references ${ENV_VAR} placeholders
 src/main/resources/application.properties
+
+### Reference documents ###
+readme/

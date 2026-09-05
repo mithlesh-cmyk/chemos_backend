@@ -35,6 +35,13 @@ public class Role {
     // Direct parent in the role hierarchy. Permission inheritance is 1 level up only:
     // effective = own permissions ∪ parent's permissions.
     // Super roles are skipped during inheritance traversal.
+    //
+    // Inheritance here is strictly additive — a child role always ends up with AT LEAST
+    // everything its parent has, never less. So parentRole must only ever point at a role
+    // whose entire permission set you're happy to have fully absorbed into the child.
+    // Org-chart "reports to" relationships are NOT the same thing as parentRole — a role
+    // one level down in the business hierarchy should usually have parentRole = null and
+    // its own explicit (narrower) permission set, not inherit from its manager's role.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_role_id")
     private Role parentRole;
@@ -46,4 +53,11 @@ public class Role {
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     private Set<Permission> permissions = new HashSet<>();
+
+    // True for roles whose users may only see/act on records they created themselves
+    // (e.g. SALES_EXECUTIVE, PURCHASE_EXECUTIVE) — enforced in the relevant services via
+    // CurrentUserService.isRowScoped(), not here. Managers/Director/Admin leave this false.
+    @Column(name = "restrict_to_own_records", nullable = false,
+            columnDefinition = "boolean not null default false")
+    private boolean restrictToOwnRecords = false;
 }

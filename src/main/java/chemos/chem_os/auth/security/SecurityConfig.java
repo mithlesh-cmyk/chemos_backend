@@ -70,7 +70,13 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/login", "/error", "/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/2fa/enroll/init",
+                                "/api/v1/auth/2fa/enroll/confirm",
+                                "/api/v1/auth/2fa/login/verify",
+                                "/error", "/actuator/health", "/actuator/info"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 // No token at all → 401 Unauthorized

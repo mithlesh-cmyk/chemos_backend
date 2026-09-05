@@ -2,7 +2,7 @@ package chemos.chem_os.auth.service;
 
 import chemos.chem_os.auth.dto.CreateUserRequest;
 import chemos.chem_os.auth.dto.LoginRequest;
-import chemos.chem_os.auth.dto.LoginResponse;
+import chemos.chem_os.auth.dto.PreAuthChallengeResponse;
 import chemos.chem_os.auth.dto.RoleResponse;
 import chemos.chem_os.auth.dto.UserConfigResponse;
 import chemos.chem_os.services.AuditLogService;
@@ -10,11 +10,15 @@ import chemos.chem_os.auth.dto.UserConfigResponse.ModuleAccess;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModulesConfig;
 import chemos.chem_os.auth.dto.UserConfigResponse.UserInfo;
 import chemos.chem_os.auth.dto.UserResponse;
+import chemos.chem_os.auth.model.Permission;
 import chemos.chem_os.auth.model.Role;
+import chemos.chem_os.auth.model.TwoFactorCredential;
 import chemos.chem_os.auth.model.User;
 import chemos.chem_os.auth.repository.RoleRepository;
+import chemos.chem_os.auth.repository.TwoFactorCredentialRepository;
 import chemos.chem_os.auth.repository.UserRepository;
 import chemos.chem_os.auth.security.JwtService;
+import chemos.chem_os.auth.security.LoginRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,25 +40,45 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final PermissionResolverService permissionResolverService;
     private final AuditLogService auditLogService;
+    private final TwoFactorCredentialRepository twoFactorCredentialRepository;
+    private final LoginRateLimiter loginRateLimiter;
 
-    public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password"));
+    // Step 1 of login: validates the password only. Never issues a full-access token —
+    // the caller must complete /auth/2fa/enroll/* or /auth/2fa/login/verify with the
+    // returned pre-auth token before receiving one.
+    public PreAuthChallengeResponse login(LoginRequest request) {
+        String username = request.username();
+        loginRateLimiter.assertNotLocked(username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    loginRateLimiter.recordFailure(username);
+                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+                });
 
         if (!user.getIsActive()) {
+            loginRateLimiter.recordFailure(username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account is disabled");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            loginRateLimiter.recordFailure(username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
 
+        loginRateLimiter.recordSuccess(username);
 
-        String token = jwtService.generateToken(user.getUsername(), user.getRole().getName());
+        boolean totpEnabled = twoFactorCredentialRepository.findByUserId(user.getId())
+                .map(TwoFactorCredential::isEnabled)
+                .orElse(false);
 
-        return new LoginResponse(token, user.getUsername(), user.getRole().getName());
+        String status = totpEnabled ? "VERIFICATION_REQUIRED" : "ENROLLMENT_REQUIRED";
+        String preAuthToken = jwtService.generatePreAuthToken(user.getUsername());
+
+        return new PreAuthChallengeResponse(status, preAuthToken, user.getUsername());
     }
 
+    @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.findByUsername(request.username()).isPresent()) {
             throw new RuntimeException("Username already exists");
@@ -77,18 +101,31 @@ public class AuthService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public List<UserResponse> listUsers() {
         return userRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<RoleResponse> listRoles() {
         return roleRepository.findAll().stream()
-                .map(r -> new RoleResponse(r.getId(), r.getName(), r.getDisplayName()))
+                .map(r -> new RoleResponse(
+                        r.getId(),
+                        r.getName(),
+                        r.getDisplayName(),
+                        r.isSuperRole(),
+                        r.getParentRole() != null ? r.getParentRole().getId() : null,
+                        r.getPermissions().stream()
+                                .map(Permission::getPermissionCode)
+                                .sorted()
+                                .toList()
+                ))
                 .toList();
     }
 
+    @Transactional
     public UserResponse toggleUserActive(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -144,12 +181,14 @@ public class AuthService {
     }
 
     private UserResponse toResponse(User user) {
+        Set<String> perms = permissionResolverService.resolve(user);
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getIsActive(),
                 user.getRole().getName(),
-                user.getRole().getDisplayName()
+                user.getRole().getDisplayName(),
+                perms.stream().sorted().toList()
         );
     }
 }

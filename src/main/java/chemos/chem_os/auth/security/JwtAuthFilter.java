@@ -46,6 +46,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Pre-auth tokens (issued after password check, before 2FA is verified) never grant
+        // authorities — they only exist to carry identity across the /2fa/** challenge endpoints.
+        if (!jwtService.isFullStage(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String username = jwtService.extractUsername(token);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

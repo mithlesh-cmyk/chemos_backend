@@ -23,6 +23,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             "(:productId IS NULL OR s.product.id = :productId) AND " +
             "(:companyTo IS NULL OR s.companyTo = :companyTo) AND " +
             "(:port IS NULL OR s.port = :port) AND " +
+            "(:createdByFilter IS NULL OR s.createdBy = :createdByFilter) AND " +
             "s.date >= :startDate AND s.date <= :endDate")
     Page<Sales> findWithFilters(
             @Param("productId") String productId,
@@ -30,6 +31,7 @@ public interface SalesRepository extends JpaRepository<Sales, String>, JpaSpecif
             @Param("port") String port,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
+            @Param("createdByFilter") String createdByFilter,
             Pageable pageable
     );
 
