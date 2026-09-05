@@ -18,6 +18,7 @@ import chemos.chem_os.auth.repository.RoleRepository;
 import chemos.chem_os.auth.repository.TwoFactorCredentialRepository;
 import chemos.chem_os.auth.repository.UserRepository;
 import chemos.chem_os.auth.security.JwtService;
+import chemos.chem_os.auth.security.LoginRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,21 +41,32 @@ public class AuthService {
     private final PermissionResolverService permissionResolverService;
     private final AuditLogService auditLogService;
     private final TwoFactorCredentialRepository twoFactorCredentialRepository;
+    private final LoginRateLimiter loginRateLimiter;
 
     // Step 1 of login: validates the password only. Never issues a full-access token —
     // the caller must complete /auth/2fa/enroll/* or /auth/2fa/login/verify with the
     // returned pre-auth token before receiving one.
     public PreAuthChallengeResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password"));
+        String username = request.username();
+        loginRateLimiter.assertNotLocked(username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    loginRateLimiter.recordFailure(username);
+                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+                });
 
         if (!user.getIsActive()) {
+            loginRateLimiter.recordFailure(username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account is disabled");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            loginRateLimiter.recordFailure(username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
+
+        loginRateLimiter.recordSuccess(username);
 
         boolean totpEnabled = twoFactorCredentialRepository.findByUserId(user.getId())
                 .map(TwoFactorCredential::isEnabled)
