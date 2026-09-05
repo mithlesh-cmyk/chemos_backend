@@ -73,25 +73,6 @@ PurchaseService {
         return purchaseRepository.findAll(buildFilterSpecification(status, product), pageable);
     }
 
-    @Transactional(readOnly = true)
-    public PurchaseReceivedValueResponse getTotalReceivedValue(String status, String product) {
-        List<Purchase> purchases = purchaseRepository.findAll(buildFilterSpecification(status, product));
-
-        BigDecimal totalValue = BigDecimal.ZERO;
-        long purchaseCount = 0;
-
-        for (Purchase purchase : purchases) {
-            if (purchase.getQuantityReceived() == null || purchase.getPriceInr() == null) {
-                continue;
-            }
-            totalValue = totalValue.add(
-                    purchase.getPriceInr().multiply(BigDecimal.valueOf(purchase.getQuantityReceived())));
-            purchaseCount++;
-        }
-
-        return new PurchaseReceivedValueResponse(totalValue, purchaseCount);
-    }
-
     private Specification<Purchase> buildFilterSpecification(String status, String product) {
         Specification<Purchase> spec = (root, query, cb) -> cb.conjunction();
 
