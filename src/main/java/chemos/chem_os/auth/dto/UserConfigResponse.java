@@ -25,6 +25,7 @@ public record UserConfigResponse(
             ModuleAccess sales,
             ModuleAccess purchases,
             ModuleAccess company,
-            ModuleAccess products
+            ModuleAccess products,
+            boolean dashboardVisible
     ) {}
 }

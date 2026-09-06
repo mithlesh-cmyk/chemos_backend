@@ -9,6 +9,7 @@ import chemos.chem_os.auth.dto.LoginResponse;
 import chemos.chem_os.auth.dto.PreAuthChallengeResponse;
 import chemos.chem_os.auth.dto.RoleResponse;
 import chemos.chem_os.auth.dto.TwoFactorStatusResponse;
+import chemos.chem_os.auth.dto.UpdateUserRequest;
 import chemos.chem_os.auth.dto.UserConfigResponse;
 import chemos.chem_os.auth.dto.UserResponse;
 import chemos.chem_os.auth.dto.VerifyLoginRequest;
@@ -22,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -101,6 +103,19 @@ public class AuthController {
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> listUsers() {
         return ResponseEntity.ok(authService.listUsers());
+    }
+
+    @PreAuthorize("hasAuthority('USER_MANAGEMENT')")
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
+        return ResponseEntity.ok(authService.getUserById(id));
+    }
+
+    @PreAuthorize("hasAuthority('USER_MANAGEMENT')")
+    @PatchMapping("/users/{username}")
+    public ResponseEntity<UserResponse> updateUser(@PathVariable String username,
+                                                    @Valid @RequestBody UpdateUserRequest request) {
+        return ResponseEntity.ok(authService.updateUser(username, request));
     }
 
     @PreAuthorize("hasAuthority('USER_MANAGEMENT')")
