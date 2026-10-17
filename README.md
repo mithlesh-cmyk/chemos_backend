@@ -9,15 +9,11 @@ path `/api/v1/auth`.
 
 ## Base URLs
 
-| Environment | URL |
-|---|---|
-| Local dev (backend on your machine) | `http://localhost:8081` |
-| Dev server | `http://35.154.133.62:8082` |
-| Prod server | `http://35.154.133.62:8083` |
+
 
 CORS is already configured to allow `http://localhost:3000`,
 `http://localhost:5173`, `http://35.154.133.62:3000` and
-`http://35.154.133.62:3001`. If your frontend runs on a different
+
 origin/port, the backend team needs to add it to `SecurityConfig.java`
 before your requests will succeed.
 
