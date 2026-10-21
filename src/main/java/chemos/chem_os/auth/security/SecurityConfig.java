@@ -48,7 +48,9 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://35.154.133.62:3000",
-                "http://35.154.133.62:3001"
+                "http://35.154.133.62:3001",
+                "http://13.206.139.250:3000",
+                "http://13.206.139.250:3001"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

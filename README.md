@@ -1,3 +1,144 @@
+# ChemOS Backend: Technical Architecture
+
+ChemOS is a Java 21, Spring Boot REST API for sales, purchasing, inventory, operational reference data, CSV-based financial data, and user/permission management. It is currently implemented as a single deployable Spring Boot application backed by PostgreSQL. The architecture below reflects the checked-in source and deployment configuration.
+
+Security findings and prioritized hardening requirements are documented in [readme/SECURITY_HARDENING.md](readme/SECURITY_HARDENING.md).
+
+## System Context
+
+The backend exposes versioned HTTP APIs consumed by a separate frontend. JSON is the normal request/response format; CSV and multipart file upload are used by import/export endpoints. The application and its scheduled jobs share one relational database.
+
+```mermaid
+flowchart LR
+  User[Business user] --> UI[Web frontend]
+  UI -->|HTTPS/HTTP REST: JSON, CSV, multipart| API
+  subgraph API[ChemOS Spring Boot application]
+    Security[Spring Security and JWT filter]
+    Controllers[REST controllers]
+    Services[Domain and application services]
+    Persistence[Spring Data JPA repositories]
+    Jobs[Scheduled stock snapshot]
+    Startup[Seeders and schema compatibility runner]
+    Security --> Controllers
+    Controllers --> Services
+    Services --> Persistence
+    Jobs --> Services
+    Startup --> Persistence
+  end
+  Persistence --> ORM[Hibernate ORM]
+  ORM --> DB[(PostgreSQL)]
+```
+
+The application is a modular monolith, not a collection of independently deployed services. Authentication, sales, purchases, inventory, reporting, and reference data run in the same JVM and share the same database connection pool and deployment lifecycle.
+
+## Runtime Architecture
+
+The main runtime path is:
+
+```mermaid
+sequenceDiagram
+  participant Client as Frontend
+  participant Filter as JWT filter / Spring Security
+  participant Controller as REST controller
+  participant Service as Application service
+  participant Repo as Spring Data repository
+  participant DB as PostgreSQL
+  Client->>Filter: HTTP request + Bearer token
+  Filter->>Filter: Validate full-stage JWT; load active user and effective permissions
+  Filter->>Controller: Establish authenticated SecurityContext
+  Controller->>Controller: Check endpoint permission (@PreAuthorize)
+  Controller->>Service: Validate/dispatch use case
+  Service->>Repo: Read or write within transaction
+  Repo->>DB: Hibernate/JPA query
+  DB-->>Repo: Rows / update result
+  Repo-->>Service: Entities or projections
+  Service-->>Controller: Result / mapped response
+  Controller-->>Client: HTTP status and JSON / CSV
+```
+
+For a request without a full access token, security rejects protected routes with `401`. An authenticated user lacking the endpoint's permission receives `403`. Authentication and endpoint permissions are enforced on the backend; frontend permission data is only suitable for driving interface visibility.
+
+## Application Structure
+
+| Package | Responsibility |
+| --- | --- |
+| `chemos.chem_os.controller` | HTTP boundary for domain APIs: request parameters, payloads, status/response construction, file transfers, and permission annotations. |
+| `chemos.chem_os.services` | Business use cases and transaction boundaries for sales, purchases, links, stock, reference data, CSV imports, audit events, and current-user context. |
+| `chemos.chem_os.repository` | Spring Data JPA repositories and domain-specific queries/projections. |
+| `chemos.chem_os.model` | JPA entities representing transactions, inventory, reference data, uploads, stock snapshots, and audit records. |
+| `chemos.chem_os.dto` | Request/response records and transfer shapes used by API operations. |
+| `chemos.chem_os.mapper` | Entity/DTO conversions for selected domains, including sales, purchases, company, product, port, and other reference data. |
+| `chemos.chem_os.auth.controller` | Login, 2FA, user administration, role listing, and permission override endpoints under `/api/v1/auth`. |
+| `chemos.chem_os.auth.service` | Password authentication, TOTP and backup-code workflows, permission resolution, and user/override management. |
+| `chemos.chem_os.auth.security` | Stateless security configuration, JWT issue/validation, request authentication, TOTP-secret encryption, and login rate limiting. |
+| `chemos.chem_os.auth.model` / `repository` | JPA entities and repositories for users, roles, permissions, per-user restrictions, TOTP credentials, and backup codes. |
+| `chemos.chem_os.auth.config` | Permission/admin seeding and a startup compatibility migration for sale-purchase-link schema changes. |
+
+The Spring Boot entry point is `ChemOsApplication`. It enables component scanning, auto-configuration, and scheduling. Controllers depend on services rather than accessing repositories directly; services coordinate persistence and cross-cutting operations such as audit logging.
+
+## Business Domains and API Surface
+
+The principal REST resource groups are:
+
+| Domain | API base path | Main responsibilities |
+| --- | --- | --- |
+| Authentication and administration | `/api/v1/auth` | Password challenge, 2FA enrollment/verification/recovery, current-user permissions, user lifecycle, and roles. Permission overrides are under `/api/v1/auth/users/{username}/permission-overrides`. |
+| Sales | `/api/v1/sales` | Create/read/update, confirm/cancel, lifted quantity, filtering, CSV import/export, and summaries. |
+| Purchases | `/api/v1/purchase` | Purchase orders, confirmation/cancellation, receipt updates, physical-stock workflows, and export. |
+| Sale-purchase links | `/api/v1/links` | Link sale and purchase quantities, list links by user or transaction, and track negative-link history. |
+| Inventory and stock analytics | `/api/v1/stock-stats` plus purchase physical-stock routes | Vessel/product/port stock views, summaries, history, and daily incoming-unsold snapshots. |
+| Reference data | `/api/v1/companies`, `/products`, `/ports`, `/countries`, `/payment-terms`, `/market-status`, `/transit-days`, `/salespersons` | Search, suggestions, and maintenance of business lookup data. |
+| Financial uploads and audit | `/api/v1/cost-csv`, `/revenue-csv`, `/pl`, `/api/v1/audit` | Upload and query cost, revenue, and P&L rows; inspect audit events. |
+
+The domain model uses `Sales` and `Purchase` as core transaction records, connected by `SalePurchaseLink`. Inventory-related records include physical and dump stock and `IncomingUnsoldSnapshot`. Supporting entities hold products, companies, ports, countries, payment terms, market status, and salespeople. CSV upload metadata and imported entries are persisted separately from the transactional records. JPA associations are used for several references (for example, product, port, status, and salesperson), while some legacy business values remain represented as strings; the model is therefore not uniformly normalized.
+
+## Authentication and Authorization
+
+The security configuration is stateless: CSRF, form login, and HTTP Basic are disabled; the JWT filter runs before the standard username/password filter. Login uses a two-stage flow:
+
+1. `POST /api/v1/auth/login` verifies the password and returns a short-lived pre-auth challenge token, not a normal API access token.
+2. The client either initializes and confirms TOTP enrollment or verifies a TOTP/backup code. Successful completion issues a full-stage signed JWT. TOTP secrets are encrypted for storage; backup codes are stored as hashes and consumed once.
+
+For each full-token request, `JwtAuthFilter` validates the token, reloads the active user and role/permission data, resolves effective permission codes, and installs them as Spring Security authorities. A role's own permissions and (where configured) its direct non-super parent role's permissions are combined with per-user `ALLOW` restrictions; `DENY` restrictions are applied last. A super role receives every defined permission. Controllers enforce these codes with `@PreAuthorize`. Some services additionally apply record-ownership scoping for roles marked as restricted; this is separate from endpoint-level permission checks.
+
+Passwords use BCrypt. The JWT service signs tokens with HS256 and sets a 24-hour full-token lifetime. Login and 2FA failure/lockout behavior is implemented in the security/auth services. CORS is allow-listed in `SecurityConfig`; update that list when frontend origins change.
+
+## Persistence and Background Work
+
+Spring Data JPA and Hibernate provide ORM and repository access to PostgreSQL. Service methods use Spring transaction annotations for multi-step writes and read-only operations. Apache Commons CSV is used for CSV parsing; Jackson handles JSON and Java time serialization. Actuator exposes health and info endpoints for deployment checks.
+
+The application enables scheduling. `VesselStockStatsService` runs a transactional job at 00:30 Asia/Kolkata each day to calculate and persist the previous day's incoming-unsold snapshot, then records an audit event. This job runs inside each application instance; the current deployment is configured as one service process per environment, so horizontal scaling would require a single-run/leader-election strategy to prevent duplicate scheduling.
+
+On startup, `DataSeeder` idempotently seeds permission definitions, the super-admin role, and an initial admin user if absent. `SalePurchaseLinkSchemaMigration` checks and adds selected compatibility columns/table using `JdbcTemplate`. These startup actions are in addition to Hibernate schema handling.
+
+## Configuration and Deployment
+
+| Runtime | Port | Database/schema behavior | Configuration source |
+| --- | ---: | --- | --- |
+| Default | `8081` | `ddl-auto=update` | `application.properties` |
+| Development | `8082` | `ddl-auto=update` | `application-dev.properties` with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, JWT and TOTP keys from environment. |
+| Production | `8083` | `ddl-auto=validate` | `application-prod.properties` with the same secrets and DB settings supplied from environment. |
+
+Local `docker-compose.yml` starts PostgreSQL 17 only; it does not containerize the API. Ensure the active Spring profile and database URL target that local database when using Compose. Production schema changes are not automatically created by Hibernate: `sql/2fa_schema.sql` documents the 2FA tables that must exist for production validation. There is no Flyway or Liquibase dependency in the Maven manifest, so schema evolution currently relies on Hibernate in update-mode environments, explicit SQL, and the targeted startup compatibility runner.
+
+The GitHub Actions workflows build a Java 21 Maven JAR on pushes to `development` and `main`, copy the JAR/configuration to EC2 over SSH, invoke the environment's deployment script, and check `/actuator/health`. The workflows currently use `mvn clean package -DskipTests`; they do not gate deployment on the test suite. Development and production use separate service directories/profiles and ports, with systemd unit files checked in under `scripts/`.
+
+**Configuration security:** the checked-in default `application.properties` currently contains hard-coded database and cryptographic configuration. Treat those values as exposed, rotate them if they are real, and move secrets to environment variables or a secret manager. Do not copy secrets into this documentation. The development/production profiles and deployment workflows already use environment variables for these settings.
+
+## Build and Tests
+
+Requirements: Java 21 and Maven (or the included Maven wrapper). Build with `./mvnw clean package` on Unix-like shells or `mvnw.cmd clean package` on Windows. Tests are under `src/test/java`; current focused coverage includes authentication, 2FA, TOTP-secret encryption, and login rate limiting, plus the Spring application context test. Run the full suite with `./mvnw test` or `mvnw.cmd test` before release; the deployment workflows currently skip it.
+
+## Architecture Notes and Constraints
+
+- The backend is a single-process modular monolith with a shared PostgreSQL schema; there are no separately deployed domain services or frontend assets in this repository.
+- Authorization is permission-code based and refreshed from the database during JWT authentication, rather than trusting a role claim as the complete permission set.
+- Database migration ownership is split across Hibernate, startup JDBC compatibility logic, and manually applied SQL. Production releases that add/change schema must coordinate those steps before application rollout.
+- Scheduled snapshot work has no distributed lock in the application code. Keep one active instance per environment until scheduling is made cluster-safe.
+- The current CI deployment workflows build but skip tests. Treat the local Maven test command as a required release check until the pipeline is updated.
+
+---
+
 # ChemOS Auth + 2FA — Frontend Integration Guide
 
 This document covers everything needed to integrate the login/2FA flow,
