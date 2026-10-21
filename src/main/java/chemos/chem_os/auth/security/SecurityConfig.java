@@ -48,7 +48,9 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://35.154.133.62:3000",
-                "http://35.154.133.62:3001"
+                "http://35.154.133.62:3001",
+                "http://13.206.139.250:3000",
+                "http://13.206.139.250:3001"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -70,7 +72,13 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/login", "/error", "/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/2fa/enroll/init",
+                                "/api/v1/auth/2fa/enroll/confirm",
+                                "/api/v1/auth/2fa/login/verify",
+                                "/error", "/actuator/health", "/actuator/info"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 // No token at all → 401 Unauthorized

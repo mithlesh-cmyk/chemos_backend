@@ -1,5 +1,7 @@
 package chemos.chem_os.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -30,7 +32,7 @@ public record UpdatePurchaseRequest(
         BigDecimal sws,
         BigDecimal add,
         BigDecimal otherExpense,
-        String dischargePorts,
+        @JsonAlias("dischargePort") String dischargePorts,
         String priceType,
         Integer paymentTerm,
         LocalDate etd,

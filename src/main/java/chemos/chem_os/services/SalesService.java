@@ -91,15 +91,25 @@ public class SalesService {
                 );
             });
         }
+        if (currentUserService.isRowScoped()) {
+            String owner = currentUserService.getUsername();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("createdBy"), owner));
+        }
         return salesRepository.findAll(spec, pageable);
     }
 
+    // Shared fetch point for every single-record read/write below — the ownership check here
+    // covers update/confirm/cancel/unconfirm automatically since they all call this first.
     public Sales getSaleById(String id) {
-        return salesRepository.findById(id)
+        Sales sale = salesRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Sale not found with id: " + id
                 ));
+        if (currentUserService.isRowScoped() && !currentUserService.getUsername().equals(sale.getCreatedBy())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this sale");
+        }
+        return sale;
     }
 
     public Sales updateSale(String id, UpdateSaleRequest request) {
@@ -183,6 +193,7 @@ public class SalesService {
 
         LocalDate effectiveStart = filters.startDate() != null ? filters.startDate() : LocalDate.of(1900, 1, 1);
         LocalDate effectiveEnd = filters.endDate() != null ? filters.endDate() : LocalDate.of(2999, 12, 31);
+        String createdByFilter = currentUserService.isRowScoped() ? currentUserService.getUsername() : null;
 
         return salesRepository.findWithFilters(
                 filters.productId(),
@@ -190,6 +201,7 @@ public class SalesService {
                 filters.port(),
                 effectiveStart,
                 effectiveEnd,
+                createdByFilter,
                 pageable
         );
     }

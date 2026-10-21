@@ -35,6 +35,7 @@ jobs:
           DEV_DB_USERNAME: ${{ secrets.DEV_DB_USERNAME }}
           DEV_DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
           DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
+          DEV_TOTP_ENCRYPTION_KEY: ${{ secrets.DEV_TOTP_ENCRYPTION_KEY }}
           DEV_ADMIN_USERNAME: ${{ secrets.DEV_ADMIN_USERNAME }}
           DEV_ADMIN_PASSWORD: ${{ secrets.DEV_ADMIN_PASSWORD }}
           DEV_ADMIN_NAME: ${{ secrets.DEV_ADMIN_NAME }}
@@ -47,6 +48,7 @@ jobs:
             printf 'DB_USERNAME=%s\n' "$DEV_DB_USERNAME"
             printf 'DB_PASSWORD=%s\n' "$DEV_DB_PASSWORD"
             printf 'JWT_SECRET=%s\n' "$DEV_JWT_SECRET"
+            printf 'TOTP_ENCRYPTION_KEY=%s\n' "$DEV_TOTP_ENCRYPTION_KEY"
             printf 'APP_ADMIN_USERNAME=%s\n' "$DEV_ADMIN_USERNAME"
             printf 'APP_ADMIN_PASSWORD=%s\n' "$DEV_ADMIN_PASSWORD"
             printf 'APP_ADMIN_NAME=%s\n' "$DEV_ADMIN_NAME"

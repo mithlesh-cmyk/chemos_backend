@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -57,7 +58,8 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"prod_edit",   "PRODUCT_EDIT",     "Edit Products",     "PRODUCTS"},
             new Object[]{"usr_mgmt",    "USER_MANAGEMENT",  "User Management",   "ADMIN"},
             new Object[]{"role_mgmt",   "ROLE_MANAGEMENT",  "Role Management",   "ADMIN"},
-            new Object[]{"stock_stats_view", "STOCK_STATS_VIEW", "View Vessel Stock Stats", "STOCK"}
+            new Object[]{"stock_stats_view", "STOCK_STATS_VIEW", "View Vessel Stock Stats", "STOCK"},
+            new Object[]{"dash_view",   "DASHBOARD_VIEW",   "View Dashboard",    "DASHBOARD"}
     );
 
     @Override
@@ -65,7 +67,46 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         seedPermissions();
         seedAdminRole();
+        seedManagerRoles();
         seedAdminUser();
+    }
+
+    // Baseline permissions for the manager roles (one level below admin). Additive only:
+    // missing permissions are granted, existing ones are never removed, so customisations
+    // made through role management survive restarts.
+    // roleName -> {roleId, displayName, permission ids}
+    private static final Map<String, Object[]> MANAGER_ROLES = Map.of(
+            "SALES_MANAGER", new Object[]{"sal_man", "Sales Manager",
+                    List.of("sale_view", "sale_create", "sale_edit", "sale_approve",
+                            "comp_view", "prod_view", "dash_view")},
+            "PURCHASE_MANAGER", new Object[]{"pur_man", "Purchase Manager",
+                    List.of("pur_view", "pur_create", "pur_edit", "pur_approve",
+                            "comp_view", "prod_view", "dash_view")}
+    );
+
+    @SuppressWarnings("unchecked")
+    private void seedManagerRoles() {
+        MANAGER_ROLES.forEach((roleName, def) -> {
+            Role role = roleRepository.findByName(roleName).orElseGet(() -> {
+                Role r = new Role();
+                r.setId((String) def[0]);
+                r.setName(roleName);
+                r.setDisplayName((String) def[1]);
+                log.info("Seeded {} role.", roleName);
+                return r;
+            });
+            int added = 0;
+            for (String permId : (List<String>) def[2]) {
+                var perm = permissionRepository.findById(permId);
+                if (perm.isPresent() && role.getPermissions().add(perm.get())) {
+                    added++;
+                }
+            }
+            if (added > 0 || role.getPermissions().isEmpty()) {
+                roleRepository.save(role);
+                log.info("Granted {} missing permission(s) to {}.", added, roleName);
+            }
+        });
     }
 
     private void seedPermissions() {
