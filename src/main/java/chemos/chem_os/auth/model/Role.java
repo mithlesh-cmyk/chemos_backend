@@ -2,6 +2,7 @@ package chemos.chem_os.auth.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -41,8 +42,8 @@ public class Role {
     public enum InheritanceMode { NONE, ALL, SELECTED }
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "inheritance_mode", nullable = false,
-            columnDefinition = "varchar(16) not null default 'NONE'")
+    @ColumnDefault("'NONE'")
+    @Column(name = "inheritance_mode", nullable = false, length = 16)
     private InheritanceMode inheritanceMode = InheritanceMode.NONE;
 
     @ManyToMany(fetch = FetchType.LAZY)
