@@ -21,6 +21,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +47,8 @@ class AuthServiceTest {
     private AuditLogService auditLogService;
     @Mock
     private TwoFactorCredentialRepository twoFactorCredentialRepository;
+    @Mock
+    private RolePermissionService rolePermissionService;
 
     private LoginRateLimiter loginRateLimiter;
     private AuthService authService;
@@ -66,7 +69,8 @@ class AuthServiceTest {
                 permissionResolverService,
                 auditLogService,
                 twoFactorCredentialRepository,
-                loginRateLimiter
+                loginRateLimiter,
+                rolePermissionService
         );
 
         Role role = new Role();
@@ -170,6 +174,21 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(new LoginRequest("alice", "correct-password")))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Too many failed login attempts");
+    }
+
+    @Test
+    void userConfigUsesEffectivePermissionsForModuleFlags() {
+        when(userRepository.findByUsernameWithPermissions("alice")).thenReturn(Optional.of(activeUser));
+        when(permissionResolverService.resolve(activeUser))
+                .thenReturn(Set.of("PURCHASE_VIEW", "PURCHASE_CREATE", "SALE_VIEW"));
+        var response = authService.getUserConfig("alice");
+        assertThat(response.modules().purchases().canView()).isTrue();
+        assertThat(response.modules().purchases().canCreate()).isTrue();
+        assertThat(response.modules().purchases().canEdit()).isFalse();
+        assertThat(response.modules().purchases().canApprove()).isFalse();
+        assertThat(response.modules().sales().canView()).isTrue();
+        assertThat(response.modules().sales().canEdit()).isFalse();
+        assertThat(response.permissions()).doesNotContain("PURCHASE_EDIT", "PURCHASE_APPROVE", "SALE_EDIT");
     }
 
     @Test

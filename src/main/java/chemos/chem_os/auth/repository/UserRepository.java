@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             SELECT u FROM User u
             JOIN FETCH u.role r
             LEFT JOIN FETCH r.permissions
+            LEFT JOIN FETCH r.inheritedPermissions
             LEFT JOIN FETCH r.parentRole pr
             LEFT JOIN FETCH pr.permissions
             WHERE u.username = :username

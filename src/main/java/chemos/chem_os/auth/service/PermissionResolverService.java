@@ -29,13 +29,28 @@ public class PermissionResolverService {
     // uniform audit logging — every admin action maps to a real permission code
     // in the security context.
     //
-    // Regular roles: own permissions ∪ direct parent's permissions (1 level up).
-    // Super role parents are skipped — inheritance stops before reaching admin.
-    // User-level restrictions (deny-list) are then subtracted from the result.
+    // Regular roles: direct permissions plus explicitly configured inheritance.
+    // User ALLOW overrides add permissions; DENY overrides always win.
     @Transactional(readOnly = true)
     public Set<String> resolve(User user) {
-        Role role = user.getRole();
+        Set<String> effective = resolveRole(user.getRole());
+        if (user.getRole().isSuperRole()) {
+            return effective;
+        }
 
+        List<UserPermissionRestriction> overrides = restrictionRepository.findByUserId(user.getId());
+        overrides.stream()
+                .filter(o -> o.getEffect() == OverrideEffect.ALLOW)
+                .forEach(o -> effective.add(o.getPermission().getPermissionCode()));
+        overrides.stream()
+                .filter(o -> o.getEffect() == OverrideEffect.DENY)
+                .forEach(o -> effective.remove(o.getPermission().getPermissionCode()));
+
+        return effective;
+    }
+
+    @Transactional(readOnly = true)
+    public Set<String> resolveRole(Role role) {
         if (role.isSuperRole()) {
             return permissionRepository.findAll().stream()
                     .map(Permission::getPermissionCode)
@@ -46,25 +61,22 @@ public class PermissionResolverService {
 
         role.getPermissions().forEach(p -> effective.add(p.getPermissionCode()));
 
-        // 1 level up: include parent's permissions, but never traverse into a super role.
-        // This prevents children of admin from inheriting all permissions.
+        effective.addAll(resolveInherited(role));
+        return effective;
+    }
+
+    @Transactional(readOnly = true)
+    public Set<String> resolveInherited(Role role) {
         Role parent = role.getParentRole();
-        if (parent != null && !parent.isSuperRole()) {
-            parent.getPermissions().forEach(p -> effective.add(p.getPermissionCode()));
+        if (role.isSuperRole() || parent == null || parent.isSuperRole()
+                || role.getInheritanceMode() == Role.InheritanceMode.NONE) {
+            return Set.of();
         }
 
-        // Apply user-level overrides on top of the role: ALLOW first (grants beyond the role,
-        // e.g. a manager delegating one permission to one executive), then DENY (always wins,
-        // even over an ALLOW — shouldn't co-occur for the same code given the unique constraint,
-        // but the ordering is a defensive invariant either way).
-        List<UserPermissionRestriction> overrides = restrictionRepository.findByUserId(user.getId());
-        overrides.stream()
-                .filter(o -> o.getEffect() == OverrideEffect.ALLOW)
-                .forEach(o -> effective.add(o.getPermission().getPermissionCode()));
-        overrides.stream()
-                .filter(o -> o.getEffect() == OverrideEffect.DENY)
-                .forEach(o -> effective.remove(o.getPermission().getPermissionCode()));
-
-        return effective;
+        return parent.getPermissions().stream()
+                .filter(p -> role.getInheritanceMode() == Role.InheritanceMode.ALL
+                        || role.getInheritedPermissions().contains(p))
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toSet());
     }
 }

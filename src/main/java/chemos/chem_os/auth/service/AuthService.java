@@ -11,7 +11,6 @@ import chemos.chem_os.auth.dto.UserConfigResponse.ModuleAccess;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModulesConfig;
 import chemos.chem_os.auth.dto.UserConfigResponse.UserInfo;
 import chemos.chem_os.auth.dto.UserResponse;
-import chemos.chem_os.auth.model.Permission;
 import chemos.chem_os.auth.model.Role;
 import chemos.chem_os.auth.model.TwoFactorCredential;
 import chemos.chem_os.auth.model.User;
@@ -44,6 +43,7 @@ public class AuthService {
     private final AuditLogService auditLogService;
     private final TwoFactorCredentialRepository twoFactorCredentialRepository;
     private final LoginRateLimiter loginRateLimiter;
+    private final RolePermissionService rolePermissionService;
 
     // Step 1 of login: validates the password only. Never issues a full-access token —
     // the caller must complete /auth/2fa/enroll/* or /auth/2fa/login/verify with the
@@ -112,19 +112,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public List<RoleResponse> listRoles() {
-        return roleRepository.findAll().stream()
-                .map(r -> new RoleResponse(
-                        r.getId(),
-                        r.getName(),
-                        r.getDisplayName(),
-                        r.isSuperRole(),
-                        r.getParentRole() != null ? r.getParentRole().getId() : null,
-                        r.getPermissions().stream()
-                                .map(Permission::getPermissionCode)
-                                .sorted()
-                                .toList()
-                ))
-                .toList();
+        return rolePermissionService.listRoles();
     }
 
     @Transactional(readOnly = true)
