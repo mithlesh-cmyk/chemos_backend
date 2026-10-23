@@ -99,7 +99,7 @@ The security configuration is stateless: CSRF, form login, and HTTP Basic are di
 1. `POST /api/v1/auth/login` verifies the password and returns a short-lived pre-auth challenge token, not a normal API access token.
 2. The client either initializes and confirms TOTP enrollment or verifies a TOTP/backup code. Successful completion issues a full-stage signed JWT. TOTP secrets are encrypted for storage; backup codes are stored as hashes and consumed once.
 
-For each full-token request, `JwtAuthFilter` validates the token, reloads the active user and role/permission data, resolves effective permission codes, and installs them as Spring Security authorities. A role's own permissions and (where configured) its direct non-super parent role's permissions are combined with per-user `ALLOW` restrictions; `DENY` restrictions are applied last. A super role receives every defined permission. Controllers enforce these codes with `@PreAuthorize`. Some services additionally apply record-ownership scoping for roles marked as restricted; this is separate from endpoint-level permission checks.
+For each full-token request, `JwtAuthFilter` validates the token, reloads the active user and role/permission data, resolves effective permission codes, and installs them as Spring Security authorities. A role's own permissions and its explicitly configured inheritance (`NONE`, `ALL`, or `SELECTED`) are combined with per-user `ALLOW` overrides; `DENY` overrides are applied last. A parent link alone grants nothing. A super role receives every defined permission. Controllers enforce these codes with `@PreAuthorize`. Some services additionally apply record-ownership scoping for roles marked as restricted; this is separate from endpoint-level permission checks.
 
 Passwords use BCrypt. The JWT service signs tokens with HS256 and sets a 24-hour full-token lifetime. Login and 2FA failure/lockout behavior is implemented in the security/auth services. CORS is allow-listed in `SecurityConfig`; update that list when frontend origins change.
 
@@ -152,11 +152,12 @@ path `/api/v1/auth`.
 
 
 
-CORS is already configured to allow `http://localhost:3000`,
-`http://localhost:5173`, `http://35.154.133.62:3000` and
-
-origin/port, the backend team needs to add it to `SecurityConfig.java`
-before your requests will succeed.
+CORS allows the exact HTTPS frontend origins `https://sumairo-os.org.in`
+and `https://dev.sumairo-os.org.in`, plus the existing local/IP development
+origins listed in [SecurityConfig.java](src/main/java/chemos/chem_os/auth/security/SecurityConfig.java).
+If the frontend changes origin (scheme, hostname, or port), update that
+allow-list and redeploy the backend before browser requests will succeed.
+Do not use a wildcard origin with credentialed requests.
 
 ## The big picture: login is two steps, always
 
@@ -470,11 +471,244 @@ No body. Flips `isActive`. A deactivated user can't log in
     "displayName": "Sales Manager",
     "isSuperRole": false,
     "parentRoleId": null,
-    "permissions": ["SALE_VIEW", "SALE_CREATE", "SALE_EDIT"]
+    "permissions": ["SALE_VIEW", "SALE_CREATE", "SALE_EDIT"],
+    "inheritanceMode": "NONE",
+    "selectedInheritedPermissions": [],
+    "inheritedPermissions": [],
+    "effectivePermissions": ["SALE_CREATE", "SALE_EDIT", "SALE_VIEW"]
   }
 ]
 ```
 Use `id` as the `roleId` value when creating/editing a user.
+
+## Permission administration (backend contract)
+
+All permission administration endpoints below require `ROLE_MANAGEMENT`, not a
+business permission such as `PURCHASE_EDIT`. This is a trusted administrative
+capability: its holders can grant any defined permission, including administrative
+permissions, even if they do not personally hold the permission being granted.
+Do not grant it to ordinary executives or managers unless that authority is intended.
+`GET /api/v1/auth/roles` and `GET /api/v1/auth/users` accept either
+`USER_MANAGEMENT` or `ROLE_MANAGEMENT`; user creation and role assignment still
+require `USER_MANAGEMENT`.
+
+### Deployment prerequisite (manual, not executed automatically)
+
+The role mapping now needs an `inheritance_mode` column and a
+`role_inherited_permissions` join table. The PostgreSQL script
+[`sql/permission_inheritance_schema.sql`](sql/permission_inheritance_schema.sql)
+is a **manual deployment prerequisite**, not a startup migration. Review, back up,
+and apply it only with approval before deploying this backend. Do not start this
+version against an unprepared production schema.
+
+The script defaults **existing and new roles to `NONE`**, preserving their direct
+grants and user overrides but disabling previously automatic parent grants.
+Parent links are retained. Review affected roles before rollout. Hibernate's
+existing `ddl-auto` configuration can also modify a database when the application
+starts; use `validate` for a controlled production deployment after migration.
+No production database is required for the permission tests.
+
+Manager-role seed defaults apply only to newly created roles. Restarting no
+longer restores permissions removed from an existing role by an administrator.
+
+### Endpoints
+
+All paths below start with `/api/v1/auth` and require the caller's full access token.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/permissions` | All permission definitions: `id`, `permissionCode`, `displayName`, `module`; use `module` to group UI columns |
+| GET | `/roles` | Roles with direct, selected, inherited, and effective permission codes |
+| GET | `/roles/{roleId}/permissions` | One role's permission configuration (same shape as a `/roles` item) |
+| PUT | `/roles/{roleId}/permissions` | Replace the entire role permission configuration |
+| GET | `/users` | User list for selecting whose overrides to administer |
+| GET | `/users/{username}/permissions` | `{username, role, overrides, effectivePermissions}`; `role` is the full role configuration |
+| GET | `/users/{username}/permission-overrides` | All explicit user overrides |
+| PUT | `/users/{username}/permission-overrides/{permissionCode}` | Set or replace one `ALLOW` or `DENY` override |
+| DELETE | `/users/{username}/permission-overrides/{permissionCode}` | Remove one override, returning that permission to the role default (`204`) |
+
+### Response and request examples
+
+`GET /permissions` returns permission definitions. Use `permissionCode` in all
+write requests; `id` is the database permission ID and is not accepted in place
+of the code.
+
+```json
+[
+  {
+    "id": "pur_edit",
+    "permissionCode": "PURCHASE_EDIT",
+    "displayName": "Edit Purchases",
+    "module": "PURCHASES"
+  }
+]
+```
+
+`GET /roles/{roleId}/permissions` and the corresponding item in `GET /roles`
+return:
+
+```json
+{
+  "id": "pur_exe",
+  "name": "PURCHASE_EXECUTIVE",
+  "displayName": "Purchase Executive",
+  "isSuperRole": false,
+  "parentRoleId": "pur_man",
+  "permissions": ["PURCHASE_CREATE", "PURCHASE_VIEW"],
+  "inheritanceMode": "SELECTED",
+  "selectedInheritedPermissions": ["PURCHASE_APPROVE"],
+  "inheritedPermissions": ["PURCHASE_APPROVE"],
+  "effectivePermissions": [
+    "PURCHASE_APPROVE",
+    "PURCHASE_CREATE",
+    "PURCHASE_VIEW"
+  ]
+}
+```
+
+The role update endpoint accepts and returns this role shape (the request does
+not include the read-only `id`, `name`, `displayName`, `isSuperRole`,
+`inheritedPermissions`, or `effectivePermissions` fields):
+
+```http
+PUT /api/v1/auth/roles/pur_exe/permissions
+Content-Type: application/json
+
+{
+  "parentRoleId": "pur_man",
+  "inheritanceMode": "SELECTED",
+  "permissions": ["PURCHASE_CREATE", "PURCHASE_VIEW"],
+  "selectedInheritedPermissions": ["PURCHASE_APPROVE"]
+}
+```
+
+`GET /users/{username}/permissions` returns the user's role configuration,
+explicit overrides, and final permissions:
+
+```json
+{
+  "username": "daisy10",
+  "role": {
+    "id": "pur_exe",
+    "name": "PURCHASE_EXECUTIVE",
+    "displayName": "Purchase Executive",
+    "isSuperRole": false,
+    "parentRoleId": "pur_man",
+    "permissions": ["PURCHASE_CREATE", "PURCHASE_VIEW"],
+    "inheritanceMode": "NONE",
+    "selectedInheritedPermissions": [],
+    "inheritedPermissions": [],
+    "effectivePermissions": ["PURCHASE_CREATE", "PURCHASE_VIEW"]
+  },
+  "overrides": [
+    {
+      "username": "daisy10",
+      "permissionCode": "PURCHASE_EDIT",
+      "displayName": "Edit Purchases",
+      "effect": "DENY",
+      "reason": "Can create orders but not edit them"
+    }
+  ],
+  "effectivePermissions": ["PURCHASE_CREATE", "PURCHASE_VIEW"]
+}
+```
+
+Set or replace a user override with `{"effect":"ALLOW"}` or
+`{"effect":"DENY","reason":"..."}`. The response has the same shape as an
+item in `overrides`. To return a permission to the role default, call DELETE;
+it returns `204 No Content`. `GET /users/{username}/permission-overrides`
+returns just the overrides array.
+
+### Suggested frontend behavior
+
+- Show permission administration only when the current user's `/me` response
+  includes `ROLE_MANAGEMENT`.
+- In the role editor, group the `GET /permissions` results by `module`. Allow
+  direct grants to be selected independently of inheritance. `NONE` needs no
+  parent; `ALL` and `SELECTED` need a non-super parent. For `SELECTED`, show
+  only that parent's direct `permissions` as selectable inherited rights.
+- Treat `inheritedPermissions` and `effectivePermissions` as read-only previews.
+  After saving a role, use the returned role response to refresh the view.
+- In the user editor, list all permissions and show three states: role default,
+  `ALLOW`, or `DENY`. Determine role default from `role.effectivePermissions`,
+  and the final state from the user's `effectivePermissions`. Use PUT for
+  `ALLOW`/`DENY` and DELETE for role default, then reload the user's permission
+  response.
+- Render super-role users read-only for per-user overrides; the backend rejects
+  override changes for those users with `400`.
+- A `403` means the caller lacks the required administrative permission. A
+  `404` can mean a missing role, user, or permission, or a DELETE for an
+  override that does not exist. Display API failures rather than silently
+  treating them as successful saves.
+
+Role update example:
+
+```json
+{
+  "parentRoleId": "pur_man",
+  "inheritanceMode": "SELECTED",
+  "permissions": ["PURCHASE_CREATE"],
+  "selectedInheritedPermissions": ["PURCHASE_VIEW"]
+}
+```
+
+This example grants the role `PURCHASE_CREATE` directly and inherits only
+`PURCHASE_VIEW`. It does not inherit `PURCHASE_EDIT` or `PURCHASE_APPROVE`.
+Responses use the expanded role shape shown above. All permission arrays use
+**permission codes**, not database permission IDs; `parentRoleId` uses a role ID.
+
+- `NONE`: only direct `permissions` apply, irrespective of a parent link.
+- `ALL`: adds every **direct** permission of the non-super parent.
+- `SELECTED`: adds only selected codes that the parent currently holds directly.
+  Removing a grant from the parent removes its inherited effect on the next
+  request. The selection is retained, so restoring the parent grant restores the
+  inherited effect. Direct child grants and user `ALLOW` overrides remain independent.
+- Inheritance is exactly one level; grandparents and super-role parents never
+  contribute permissions.
+- A PUT replaces, rather than appends to, the role configuration. All three
+  fields `inheritanceMode`, `permissions`, and `selectedInheritedPermissions` are
+  required. Use empty arrays intentionally to clear permissions. Send
+  `parentRoleId: null` to remove a parent link.
+- `selectedInheritedPermissions` must be empty for `NONE` or `ALL`.
+  `ALL` and `SELECTED` require a non-super parent. Unknown codes, selections
+  outside the parent's direct grants, hierarchy cycles, and super-role edits
+  return `400`. Missing roles return `404`.
+
+User override example:
+
+```http
+PUT /api/v1/auth/users/daisy10/permission-overrides/PURCHASE_EDIT
+Content-Type: application/json
+
+{"effect":"DENY","reason":"May create orders but must not edit existing orders"}
+```
+
+User permission precedence is:
+
+```text
+(direct role grants + configured inheritance + user ALLOW) - user DENY
+```
+
+Each user therefore has three UI states per right: **role default**, **ALLOW**,
+or **DENY**. To restore role default, DELETE the override (there is no `INHERIT`
+override effect). ALLOW can grant a permission beyond the user's role; DENY can
+remove direct or inherited rights. Changing one user does not modify their role
+or other users. Role changes do not erase existing user overrides, so review them
+when reassigning a user. Super-role users always have every permission; attempts
+to set/remove overrides for them return `400`. A missing user, unknown permission
+code, or deleting a nonexistent override returns `404`. Changes are audit logged.
+
+The same APIs work for sales, purchases, and other permission modules; no role
+name is hardcoded into permission resolution. Without `PURCHASE_EDIT`, both
+confirmed and unconfirmed purchase edits are denied. `PURCHASE_APPROVE` remains
+separate. The equivalent rules apply to `SALE_EDIT` and `SALE_APPROVE`.
+No right implicitly grants another: select `VIEW` separately where needed.
+
+Backend authorities refresh on each authenticated request, so changes take
+effect without issuing another JWT. Refresh `/api/v1/auth/me` in the frontend
+to update buttons, module flags and navigation; frontend visibility is not the
+security boundary. Previously any business-permission holder could manage that
+permission's user overrides; these endpoints now require `ROLE_MANAGEMENT`.
 
 ---
 

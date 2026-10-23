@@ -2,6 +2,7 @@ package chemos.chem_os.auth.service;
 
 import chemos.chem_os.auth.dto.PermissionOverrideRequest;
 import chemos.chem_os.auth.dto.PermissionOverrideResponse;
+import chemos.chem_os.auth.dto.UserPermissionsResponse;
 import chemos.chem_os.auth.model.Permission;
 import chemos.chem_os.auth.model.User;
 import chemos.chem_os.auth.model.UserPermissionRestriction;
@@ -18,11 +19,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Comparator;
 
-// Lets a caller who already holds a permission delegate it (ALLOW) or revoke it (DENY) for one
-// specific other user, on top of whatever that user's role normally grants/denies. See
-// PermissionResolverService.resolve() for how overrides combine with role permissions.
 @Service
 @RequiredArgsConstructor
 public class PermissionOverrideService {
@@ -33,10 +31,12 @@ public class PermissionOverrideService {
     private final PermissionResolverService permissionResolverService;
     private final AuditLogService auditLogService;
     private final CurrentUserService currentUserService;
+    private final RolePermissionService rolePermissionService;
 
     @Transactional
     public PermissionOverrideResponse setOverride(String username, String permissionCode, PermissionOverrideRequest request) {
         User target = loadUser(username);
+        assertMutable(target);
         Permission permission = loadPermission(permissionCode);
 
         UserPermissionRestriction override = restrictionRepository
@@ -65,6 +65,7 @@ public class PermissionOverrideService {
     @Transactional
     public void removeOverride(String username, String permissionCode) {
         User target = loadUser(username);
+        assertMutable(target);
         Permission permission = loadPermission(permissionCode);
 
         UserPermissionRestriction override = restrictionRepository
@@ -82,13 +83,23 @@ public class PermissionOverrideService {
     @Transactional(readOnly = true)
     public List<PermissionOverrideResponse> listOverrides(String username) {
         User target = loadUser(username);
-        User caller = loadUser(currentUserService.getUsername());
-        Set<String> callerPermissions = permissionResolverService.resolve(caller);
-
         return restrictionRepository.findByUserId(target.getId()).stream()
-                .filter(o -> callerPermissions.contains(o.getPermission().getPermissionCode()))
+                .sorted(Comparator.comparing(o -> o.getPermission().getPermissionCode()))
                 .map(o -> toResponse(target, o))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public UserPermissionsResponse getPermissions(String username) {
+        User target = loadUser(username);
+        return new UserPermissionsResponse(username, rolePermissionService.toResponse(target.getRole()),
+                listOverrides(username), permissionResolverService.resolve(target).stream().sorted().toList());
+    }
+
+    private void assertMutable(User target) {
+        if (target.getRole().isSuperRole()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Super-role users cannot have permission overrides");
+        }
     }
 
     private User loadUser(String username) {

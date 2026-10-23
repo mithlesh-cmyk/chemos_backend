@@ -2,6 +2,7 @@ package chemos.chem_os.auth.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -12,7 +13,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"parentRole", "permissions"})
+@ToString(exclude = {"parentRole", "permissions", "inheritedPermissions"})
 @Table(name = "roles")
 public class Role {
 
@@ -32,19 +33,26 @@ public class Role {
     @Column(name = "is_super_role", nullable = false)
     private boolean superRole = false;
 
-    // Direct parent in the role hierarchy. Permission inheritance is 1 level up only:
-    // effective = own permissions ∪ parent's permissions.
-    // Super roles are skipped during inheritance traversal.
-    //
-    // Inheritance here is strictly additive — a child role always ends up with AT LEAST
-    // everything its parent has, never less. So parentRole must only ever point at a role
-    // whose entire permission set you're happy to have fully absorbed into the child.
-    // Org-chart "reports to" relationships are NOT the same thing as parentRole — a role
-    // one level down in the business hierarchy should usually have parentRole = null and
-    // its own explicit (narrower) permission set, not inherit from its manager's role.
+    // The parent link alone does not grant permissions. Inheritance is opt-in and
+    // includes only the direct parent's own permissions, never a super role's.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_role_id")
     private Role parentRole;
+
+    public enum InheritanceMode { NONE, ALL, SELECTED }
+
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'NONE'")
+    @Column(name = "inheritance_mode", nullable = false, length = 16)
+    private InheritanceMode inheritanceMode = InheritanceMode.NONE;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "role_inherited_permissions",
+            joinColumns = @JoinColumn(name = "role_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private Set<Permission> inheritedPermissions = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

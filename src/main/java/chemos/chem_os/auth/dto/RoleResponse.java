@@ -1,5 +1,6 @@
 package chemos.chem_os.auth.dto;
 
+import chemos.chem_os.auth.model.Role.InheritanceMode;
 import java.util.List;
 
 public record RoleResponse(
@@ -7,6 +8,10 @@ public record RoleResponse(
         String name,
         String displayName,
         boolean isSuperRole,
-        String parentRoleId,       // role this one inherits from (1 level), null if none
-        List<String> permissions   // this role's own permission codes, from role_permissions — excludes inherited ones
+        String parentRoleId,
+        List<String> permissions,
+        InheritanceMode inheritanceMode,
+        List<String> selectedInheritedPermissions,
+        List<String> inheritedPermissions,
+        List<String> effectivePermissions
 ) {}

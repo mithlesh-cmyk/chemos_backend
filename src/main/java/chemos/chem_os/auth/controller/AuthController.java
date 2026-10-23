@@ -99,7 +99,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.createUser(request));
     }
 
-    @PreAuthorize("hasAuthority('USER_MANAGEMENT')")
+    @PreAuthorize("hasAnyAuthority('USER_MANAGEMENT', 'ROLE_MANAGEMENT')")
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> listUsers() {
         return ResponseEntity.ok(authService.listUsers());
@@ -124,7 +124,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.toggleUserActive(username));
     }
 
-    @PreAuthorize("hasAuthority('USER_MANAGEMENT')")
+    @PreAuthorize("hasAnyAuthority('USER_MANAGEMENT', 'ROLE_MANAGEMENT')")
     @GetMapping("/roles")
     public ResponseEntity<List<RoleResponse>> listRoles() {
         return ResponseEntity.ok(authService.listRoles());

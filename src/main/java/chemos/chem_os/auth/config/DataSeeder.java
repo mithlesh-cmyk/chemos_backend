@@ -71,9 +71,7 @@ public class DataSeeder implements CommandLineRunner {
         seedAdminUser();
     }
 
-    // Baseline permissions for the manager roles (one level below admin). Additive only:
-    // missing permissions are granted, existing ones are never removed, so customisations
-    // made through role management survive restarts.
+    // Defaults apply only when creating a role. Never re-grant rights removed by an admin.
     // roleName -> {roleId, displayName, permission ids}
     private static final Map<String, Object[]> MANAGER_ROLES = Map.of(
             "SALES_MANAGER", new Object[]{"sal_man", "Sales Manager",
@@ -87,25 +85,19 @@ public class DataSeeder implements CommandLineRunner {
     @SuppressWarnings("unchecked")
     private void seedManagerRoles() {
         MANAGER_ROLES.forEach((roleName, def) -> {
-            Role role = roleRepository.findByName(roleName).orElseGet(() -> {
-                Role r = new Role();
-                r.setId((String) def[0]);
-                r.setName(roleName);
-                r.setDisplayName((String) def[1]);
-                log.info("Seeded {} role.", roleName);
-                return r;
-            });
-            int added = 0;
+            if (roleRepository.findByName(roleName).isPresent()) {
+                return;
+            }
+            Role role = new Role();
+            role.setId((String) def[0]);
+            role.setName(roleName);
+            role.setDisplayName((String) def[1]);
             for (String permId : (List<String>) def[2]) {
-                var perm = permissionRepository.findById(permId);
-                if (perm.isPresent() && role.getPermissions().add(perm.get())) {
-                    added++;
-                }
+                role.getPermissions().add(permissionRepository.findById(permId)
+                        .orElseThrow(() -> new IllegalStateException("Missing seeded permission: " + permId)));
             }
-            if (added > 0 || role.getPermissions().isEmpty()) {
-                roleRepository.save(role);
-                log.info("Granted {} missing permission(s) to {}.", added, roleName);
-            }
+            roleRepository.save(role);
+            log.info("Seeded {} role.", roleName);
         });
     }
 

@@ -45,6 +45,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
+                "https://sumairo-os.org.in",
+                "https://dev.sumairo-os.org.in",
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://35.154.133.62:3000",
