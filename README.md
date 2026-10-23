@@ -152,11 +152,12 @@ path `/api/v1/auth`.
 
 
 
-CORS is already configured to allow `http://localhost:3000`,
-`http://localhost:5173`, `http://35.154.133.62:3000` and
-
-origin/port, the backend team needs to add it to `SecurityConfig.java`
-before your requests will succeed.
+CORS allows the exact HTTPS frontend origins `https://sumairo-os.org.in`
+and `https://dev.sumairo-os.org.in`, plus the existing local/IP development
+origins listed in [SecurityConfig.java](src/main/java/chemos/chem_os/auth/security/SecurityConfig.java).
+If the frontend changes origin (scheme, hostname, or port), update that
+allow-list and redeploy the backend before browser requests will succeed.
+Do not use a wildcard origin with credentialed requests.
 
 ## The big picture: login is two steps, always
 
