@@ -11,6 +11,7 @@ import chemos.chem_os.auth.repository.UserRepository;
 import chemos.chem_os.auth.security.JwtService;
 import chemos.chem_os.auth.security.LoginRateLimiter;
 import chemos.chem_os.services.AuditLogService;
+import chemos.chem_os.services.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,8 @@ class AuthServiceTest {
     private TwoFactorCredentialRepository twoFactorCredentialRepository;
     @Mock
     private RolePermissionService rolePermissionService;
+    @Mock
+    private EmailService emailService;
 
     private LoginRateLimiter loginRateLimiter;
     private AuthService authService;
@@ -70,7 +73,8 @@ class AuthServiceTest {
                 auditLogService,
                 twoFactorCredentialRepository,
                 loginRateLimiter,
-                rolePermissionService
+                rolePermissionService,
+                emailService
         );
 
         Role role = new Role();
