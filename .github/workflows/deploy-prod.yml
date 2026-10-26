@@ -40,6 +40,9 @@ jobs:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          APP_LOGIN_URL: ${{ secrets.APP_LOGIN_URL }}
         run: |
           {
             printf 'SPRING_PROFILES_ACTIVE=prod\n'
@@ -53,6 +56,9 @@ jobs:
             printf 'APP_ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
             printf 'APP_ADMIN_NAME=%s\n' "$ADMIN_NAME"
             printf 'APP_ADMIN_EMAIL=%s\n' "$ADMIN_EMAIL"
+            printf 'MAIL_USERNAME=%s\n' "$MAIL_USERNAME"
+            printf 'MAIL_PASSWORD=%s\n' "$MAIL_PASSWORD"
+            printf 'APP_LOGIN_URL=%s\n' "$APP_LOGIN_URL"
           } > /tmp/app-prod.env
 
       - name: Upload JAR and env to EC2

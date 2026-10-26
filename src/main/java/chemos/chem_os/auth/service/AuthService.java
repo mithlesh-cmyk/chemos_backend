@@ -7,6 +7,7 @@ import chemos.chem_os.auth.dto.RoleResponse;
 import chemos.chem_os.auth.dto.UpdateUserRequest;
 import chemos.chem_os.auth.dto.UserConfigResponse;
 import chemos.chem_os.services.AuditLogService;
+import chemos.chem_os.services.EmailService;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModuleAccess;
 import chemos.chem_os.auth.dto.UserConfigResponse.ModulesConfig;
 import chemos.chem_os.auth.dto.UserConfigResponse.UserInfo;
@@ -24,6 +25,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
@@ -44,6 +47,7 @@ public class AuthService {
     private final TwoFactorCredentialRepository twoFactorCredentialRepository;
     private final LoginRateLimiter loginRateLimiter;
     private final RolePermissionService rolePermissionService;
+    private final EmailService emailService;
 
     // Step 1 of login: validates the password only. Never issues a full-access token —
     // the caller must complete /auth/2fa/enroll/* or /auth/2fa/login/verify with the
@@ -100,6 +104,15 @@ public class AuthService {
         User saved = userRepository.save(user);
         UserResponse response = toResponse(saved);
         auditLogService.log("CREATE", "USER", saved.getId().toString(), null, response);
+
+        
+        String rawPassword = request.password();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                emailService.sendWelcomeEmail(saved.getEmail(), saved.getName(), saved.getUsername(), rawPassword);
+            }
+        });
         return response;
     }
 
