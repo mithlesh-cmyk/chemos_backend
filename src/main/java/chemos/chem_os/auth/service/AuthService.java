@@ -89,6 +89,9 @@ public class AuthService {
         if (userRepository.findByUsername(request.username()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
+        if (userRepository.existsByEmailIgnoreCase(request.email().trim())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        }
 
         Role role = roleRepository.findById(request.roleId())
                 .orElseThrow(() -> new RuntimeException("Role not found: " + request.roleId()));
@@ -144,15 +147,31 @@ public class AuthService {
         Role role = roleRepository.findById(request.roleId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role not found: " + request.roleId()));
 
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(request.email().trim(), user.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        }
+
         user.setName(request.name());
         user.setEmail(request.email());
         user.setRole(role);
-        if (request.newPassword() != null && !request.newPassword().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.newPassword()));
+        String newPassword = request.newPassword();
+        boolean passwordChanged = newPassword != null && !newPassword.isBlank();
+        if (passwordChanged) {
+            user.setPassword(passwordEncoder.encode(newPassword));
         }
 
-        UserResponse after = toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+        UserResponse after = toResponse(saved);
         auditLogService.log("UPDATE", "USER", user.getId().toString(), before, after);
+
+        if (passwordChanged) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailService.sendPasswordChangedEmail(saved.getEmail(), saved.getName(), saved.getUsername(), newPassword);
+                }
+            });
+        }
         return after;
     }
 

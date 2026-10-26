@@ -12,6 +12,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByUsername(String s);
 
+    boolean existsByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
+
     // Loads user + role + role's direct permissions + parent role + parent's permissions
     // in a single query — avoids lazy-load exceptions in JwtAuthFilter permission resolution.
     @Query("""
