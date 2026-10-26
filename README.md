@@ -89,6 +89,47 @@ The principal REST resource groups are:
 | Inventory and stock analytics | `/api/v1/stock-stats` plus purchase physical-stock routes | Vessel/product/port stock views, summaries, history, and daily incoming-unsold snapshots. |
 | Reference data | `/api/v1/companies`, `/products`, `/ports`, `/countries`, `/payment-terms`, `/market-status`, `/transit-days`, `/salespersons` | Search, suggestions, and maintenance of business lookup data. |
 | Financial uploads and audit | `/api/v1/cost-csv`, `/revenue-csv`, `/pl`, `/api/v1/audit` | Upload and query cost, revenue, and P&L rows; inspect audit events. |
+| Vessel discharge port summaries | `/api/v1/vessel-dish-port-summary` | Read all rows from the existing `public.vessel_dish_port_summary_csv` table. |
+
+### Vessel discharge port summary API
+
+`GET /api/v1/vessel-dish-port-summary` requires a valid bearer access token and
+returns `200 OK` with a JSON array of all rows, ordered by `id` ascending. There
+is no pagination; an empty table returns `[]`. This is a read-only
+API and does not import data or recreate the existing table.
+
+Optionally pass `?product_id=PROD-1` to return only rows whose `"product id"`
+exactly matches that metadata product ID. Omitting the parameter returns all
+rows. A product with no matching summaries (including an unknown ID) returns
+`200 OK` with `[]`. Blank IDs or IDs longer than 255 characters return `400`.
+Filtered results are also ordered by `id` ascending and use the same response shape.
+
+Each object includes `id`, `product`, `vessel_name`, `dish_port_clean`,
+`total_qty`, `shipment_count`, `avg_waiting_days`, `avg_berth_days`,
+`dish_port_share`, `ship_id`, `product_id`, `port_id`, and `created_at`.
+Nullable database values remain JSON `null`. Decimal values are JSON numbers;
+`created_at` is an ISO local date-time without a timezone.
+
+The summary's `"product id"` and `"port id"` reference `public.products(id)` and
+`public.ports(id)`. The model exposes lazy `productReference` and `portReference`
+associations; the scalar ID fields remain the write mappings and the API response
+is unchanged. These references are nullable, with no cascading writes or deletes.
+
+For the existing database, run this query once after reviewing the data:
+
+```sql
+ALTER TABLE public.vessel_dish_port_summary_csv
+    ADD CONSTRAINT fk_vessel_dish_port_summary_product
+        FOREIGN KEY ("product id") REFERENCES public.products(id)
+        ON DELETE NO ACTION ON UPDATE NO ACTION,
+    ADD CONSTRAINT fk_vessel_dish_port_summary_port
+        FOREIGN KEY ("port id") REFERENCES public.ports(id)
+        ON DELETE NO ACTION ON UPDATE NO ACTION;
+```
+
+All non-null IDs must already exist in the metadata tables; orphan IDs cause the
+query to fail rather than silently modify data. Referenced metadata cannot be
+deleted or have its ID changed while summary rows still reference it.
 
 The domain model uses `Sales` and `Purchase` as core transaction records, connected by `SalePurchaseLink`. Inventory-related records include physical and dump stock and `IncomingUnsoldSnapshot`. Supporting entities hold products, companies, ports, countries, payment terms, market status, and salespeople. CSV upload metadata and imported entries are persisted separately from the transactional records. JPA associations are used for several references (for example, product, port, status, and salesperson), while some legacy business values remain represented as strings; the model is therefore not uniformly normalized.
 
