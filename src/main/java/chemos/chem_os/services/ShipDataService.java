@@ -51,6 +51,24 @@ public class ShipDataService {
             LIMIT :limit OFFSET :offset
             """.formatted(INVENTORY_COLUMNS);
 
+    private static final String SHIP_NAME = "COALESCE(vessel_name, vessel_ais_name)";
+
+    private static final String SHIP_LIST_SQL = """
+            SELECT id, vessel_ship_id, %s AS vessel_name, COUNT(*) OVER() AS total_count
+            FROM mainshipdata
+            %%s
+            ORDER BY %%s
+            LIMIT :limit OFFSET :offset
+            """.formatted(SHIP_NAME);
+
+    private static final String SHIP_NAME_FILTER = "WHERE vessel_name ILIKE :likeQ OR vessel_ais_name ILIKE :likeQ";
+
+    private static final String SHIP_SUGGEST_ORDER = """
+            CASE WHEN %s ILIKE :prefixQ THEN 0 ELSE 1 END,
+            GREATEST(similarity(COALESCE(vessel_name, ''), :q),
+                     similarity(COALESCE(vessel_ais_name, ''), :q)) DESC,
+            %s ASC, id ASC""".formatted(SHIP_NAME, SHIP_NAME);
+
     private final NamedParameterJdbcTemplate jdbc;
 
     public ShipPagedResponse getMainShipData(int limit, int offset) {
@@ -79,6 +97,27 @@ public class ShipDataService {
             row.remove("total_count");
         });
         return new ShipPagedResponse(q, total, limit, offset, rows);
+    }
+
+    /** Lightweight ship list (id, vessel_ship_id, vessel_name); with a non-blank q it doubles as name suggestions. */
+    public ShipPagedResponse getShips(String q, int limit, int offset) {
+        String term = q == null ? "" : q.trim();
+        MapSqlParameterSource params = pageParams(limit, offset);
+        String sql;
+        if (term.isEmpty()) {
+            term = null;
+            sql = SHIP_LIST_SQL.formatted("", "id");
+        } else {
+            String escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            params.addValue("q", term)
+                    .addValue("likeQ", "%" + escaped + "%")
+                    .addValue("prefixQ", escaped + "%");
+            sql = SHIP_LIST_SQL.formatted(SHIP_NAME_FILTER, SHIP_SUGGEST_ORDER);
+        }
+        List<Map<String, Object>> rows = jdbc.queryForList(sql, params);
+        long total = rows.isEmpty() ? 0 : ((Number) rows.get(0).get("total_count")).longValue();
+        rows.forEach(row -> row.remove("total_count"));
+        return new ShipPagedResponse(term, total, limit, offset, rows);
     }
 
     private long countAll() {

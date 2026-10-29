@@ -18,6 +18,14 @@ public class ShipDataController {
 
     private final ShipDataService shipDataService;
 
+    @GetMapping("/ships")
+    public ShipPagedResponse getShips(
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) int offset) {
+        return shipDataService.getShips(q, limit, offset);
+    }
+
     @GetMapping("/mainshipdata")
     public ShipPagedResponse getMainShipData(
             @RequestParam(defaultValue = "10") @Min(1) @Max(10) int limit,
