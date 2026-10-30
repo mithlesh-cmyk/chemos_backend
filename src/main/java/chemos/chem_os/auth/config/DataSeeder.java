@@ -59,7 +59,8 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"usr_mgmt",    "USER_MANAGEMENT",  "User Management",   "ADMIN"},
             new Object[]{"role_mgmt",   "ROLE_MANAGEMENT",  "Role Management",   "ADMIN"},
             new Object[]{"stock_stats_view", "STOCK_STATS_VIEW", "View Vessel Stock Stats", "STOCK"},
-            new Object[]{"dash_view",   "DASHBOARD_VIEW",   "View Dashboard",    "DASHBOARD"}
+            new Object[]{"dash_view",   "DASHBOARD_VIEW",   "View Dashboard",    "DASHBOARD"},
+            new Object[]{"email_use",   "EMAIL_CAMPAIGN_USE", "Use Email Campaigns", "EMAIL"}
     );
 
     @Override
@@ -76,7 +77,7 @@ public class DataSeeder implements CommandLineRunner {
     private static final Map<String, Object[]> MANAGER_ROLES = Map.of(
             "SALES_MANAGER", new Object[]{"sal_man", "Sales Manager",
                     List.of("sale_view", "sale_create", "sale_edit", "sale_approve",
-                            "comp_view", "prod_view", "dash_view")},
+                            "comp_view", "prod_view", "dash_view", "email_use")},
             "PURCHASE_MANAGER", new Object[]{"pur_man", "Purchase Manager",
                     List.of("pur_view", "pur_create", "pur_edit", "pur_approve",
                             "comp_view", "prod_view", "dash_view")}

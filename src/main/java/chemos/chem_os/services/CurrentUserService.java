@@ -1,10 +1,13 @@
 package chemos.chem_os.services;
 
+import chemos.chem_os.auth.model.User;
 import chemos.chem_os.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,10 @@ public class CurrentUserService {
             }
         }
         return "system";
+    }
+
+    public Optional<User> getCurrentUser() {
+        return userRepository.findByUsername(getUsername());
     }
 
     // Super roles (e.g. ADMIN) bypass ownership filters and see all records.

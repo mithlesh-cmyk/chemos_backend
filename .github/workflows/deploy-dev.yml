@@ -43,6 +43,8 @@ jobs:
           DEV_MAIL_USERNAME: ${{ secrets.DEV_MAIL_USERNAME }}
           DEV_MAIL_PASSWORD: ${{ secrets.DEV_MAIL_PASSWORD }}
           DEV_APP_LOGIN_URL: ${{ secrets.DEV_APP_LOGIN_URL }}
+          DEV_EMAIL_SERVICE_URL: ${{ secrets.DEV_EMAIL_SERVICE_URL }}
+          DEV_EMAIL_SERVICE_API_KEY: ${{ secrets.DEV_EMAIL_SERVICE_API_KEY }}
         run: |
           {
             printf 'SPRING_PROFILES_ACTIVE=dev\n'
@@ -59,6 +61,8 @@ jobs:
             printf 'MAIL_USERNAME=%s\n' "$DEV_MAIL_USERNAME"
             printf 'MAIL_PASSWORD=%s\n' "$DEV_MAIL_PASSWORD"
             printf 'APP_LOGIN_URL=%s\n' "$DEV_APP_LOGIN_URL"
+            printf 'EMAIL_SERVICE_URL=%s\n' "$DEV_EMAIL_SERVICE_URL"
+            printf 'EMAIL_SERVICE_API_KEY=%s\n' "$DEV_EMAIL_SERVICE_API_KEY"
           } > /tmp/app-dev.env
 
       - name: Upload JAR and env to EC2

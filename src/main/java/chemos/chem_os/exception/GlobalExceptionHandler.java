@@ -33,4 +33,15 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(errorBody, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(EmailServiceException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailService(EmailServiceException ex) {
+        ApiErrorResponse errorBody = new ApiErrorResponse(
+                ex.getStatus().getReasonPhrase(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return new ResponseEntity<>(errorBody, ex.getStatus());
+    }
 }
