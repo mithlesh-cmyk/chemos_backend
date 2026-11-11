@@ -1,8 +1,10 @@
 package chemos.chem_os.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,8 +25,15 @@ public record CreatePurchaseRequest(
         @NotBlank(message = "product is required")
         String product,
 
-        @JsonProperty("vessel_name")
-        String vesselName,
+        @JsonProperty("ship_id")
+        @NotNull(message = "ship_id is required")
+        @Positive(message = "ship_id must be positive")
+        Long shipId,
+
+        @JsonProperty("ship_name")
+        @JsonAlias("vessel_name")
+        @NotBlank(message = "ship_name is required")
+        String shipName,
 
         String shipment,
 

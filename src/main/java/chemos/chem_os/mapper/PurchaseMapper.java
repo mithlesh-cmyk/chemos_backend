@@ -30,7 +30,8 @@ public class PurchaseMapper {
                 .purchaseType(request.purchaseType())
                 .companyFrom(request.companyFrom())
                 .product(resolveProduct(request.product()))
-                .vesselName(request.vesselName())
+                .shipId(request.shipId())
+                .vesselName(request.shipName())
                 .shipment(request.shipment())
                 .quantity(request.quantity())
                 .priceFc(request.priceFc())
@@ -66,7 +67,8 @@ public class PurchaseMapper {
         if (request.purchaseType() != null) purchase.setPurchaseType(request.purchaseType());
         if (request.companyFrom() != null) purchase.setCompanyFrom(request.companyFrom());
         if (request.product() != null) purchase.setProduct(resolveProduct(request.product()));
-        if (request.vesselName() != null) purchase.setVesselName(request.vesselName());
+        if (request.shipId() != null) purchase.setShipId(request.shipId());
+        if (request.shipName() != null) purchase.setVesselName(request.shipName());
         if (request.shipment() != null) purchase.setShipment(request.shipment());
         if (request.quantity() != null) purchase.setQuantity(request.quantity());
         if (request.priceFc() != null) purchase.setPriceFc(request.priceFc());

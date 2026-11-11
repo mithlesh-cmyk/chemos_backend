@@ -49,13 +49,18 @@ PurchaseService {
     private final PurchaseRepository purchaseRepository;
     private final PhysicalStockRepository physicalStockRepository;
     private final PurchaseMapper purchaseMapper;
+    private final ShipMasterService shipMasterService;
     private final AuditLogService auditLogService;
     private final PortTransitDaysRepository portTransitDaysRepository;
     private final StatusRepository statusRepository;
     private final CurrentUserService currentUserService;
     private final InventoryService inventoryService;
 
+    @Transactional
     public Purchase createPurchase(CreatePurchaseRequest createPurchaseRequest) {
+        shipMasterService.markAsMyShip(
+                createPurchaseRequest.shipId(),
+                createPurchaseRequest.shipName());
         Purchase purchase = purchaseMapper.toEntity(createPurchaseRequest);
         String currentUser = currentUserService.getUsername();
         purchase.setCreatedBy(currentUser);
@@ -143,7 +148,24 @@ PurchaseService {
         return purchase;
     }
 
+    @Transactional
     public Purchase updatePurchase(String id, UpdatePurchaseRequest updateRequest) {
+        boolean hasShipId = updateRequest.shipId() != null;
+        boolean hasShipName = updateRequest.shipName() != null;
+        if (hasShipId != hasShipName) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ship_id and ship_name must be provided together");
+        }
+        if (hasShipId) {
+            if (updateRequest.shipName().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ship_name must not be blank");
+            }
+            if (updateRequest.shipId() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ship_id must be positive");
+            }
+            shipMasterService.markAsMyShip(updateRequest.shipId(), updateRequest.shipName());
+        }
         Purchase purchase = getPurchaseById(id);
         Purchase before = purchase.toBuilder().build();
         purchaseMapper.updateEntity(purchase, updateRequest);

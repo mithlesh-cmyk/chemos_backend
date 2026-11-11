@@ -42,7 +42,10 @@ public class Purchase {
     @JoinColumn(name = "product")
     private Products product;
 
-    @Column(name = "vessel_name")
+    @Column(name = "ship_id")
+    private Long shipId;
+
+    @Column(name = "ship_name")
     private String vesselName;
 
     private String shipment;

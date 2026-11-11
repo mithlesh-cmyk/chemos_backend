@@ -1,7 +1,10 @@
 package chemos.chem_os.controller;
 
 import chemos.chem_os.dto.ShipPagedResponse;
+import chemos.chem_os.dto.ApiSuccessResponse;
+import chemos.chem_os.dto.ShipSuggestionResponse;
 import chemos.chem_os.services.ShipDataService;
+import chemos.chem_os.services.ShipMasterService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -11,12 +14,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1")
 public class ShipDataController {
 
     private final ShipDataService shipDataService;
+    private final ShipMasterService shipMasterService;
+
+    @GetMapping("/ships/suggestions")
+    public ApiSuccessResponse<List<ShipSuggestionResponse>> getShipSuggestions(
+            @RequestParam String query) {
+        List<ShipSuggestionResponse> ships = shipMasterService.searchShips(query);
+        return ApiSuccessResponse.<List<ShipSuggestionResponse>>builder()
+                .message(ships.isEmpty() ? "No ships found." : "Ships fetched successfully.")
+                .data(ships)
+                .build();
+    }
 
     @GetMapping("/ships")
     public ShipPagedResponse getShips(
