@@ -25,7 +25,11 @@ public class ShipDataService {
             position_area_code AS area_code,
             vessel_type,
             COALESCE(vessel_subtype, vessel_type) AS vessel_subtype,
-            vessel_updated_at
+            vessel_updated_at,
+            EXISTS (
+                SELECT 1 FROM shipwithid sw
+                WHERE sw.ship_id = mainshipdata.vessel_ship_id AND sw.my_ship = TRUE
+            ) AS my_ship
             """;
 
     private static final String SEARCH_SQL = """
