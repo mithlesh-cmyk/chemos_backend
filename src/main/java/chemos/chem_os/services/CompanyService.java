@@ -16,6 +16,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CompanyService {
 
+    private static final int SUGGESTION_MIN_QUERY_LENGTH = 2;
+    private static final int SUGGESTION_LIMIT = 10;
+
     private final CompanyRepository companyRepository;
     private final CompanyMapper companyMapper;
 
@@ -46,6 +49,19 @@ public class CompanyService {
 
         return companyRepository
                 .findSuggestions(searchKey, 20)
+                .stream()
+                .map(companyMapper::toResponse)
+                .toList();
+    }
+
+    public List<CompanySuggestionResposne> suggestCompanies(String query) {
+        String searchKey = query == null ? "" : CompanySanitizer.createSearchKey(query);
+        if (searchKey.length() < SUGGESTION_MIN_QUERY_LENGTH) {
+            return List.of();
+        }
+
+        return companyRepository
+                .findSuggestions(searchKey, SUGGESTION_LIMIT)
                 .stream()
                 .map(companyMapper::toResponse)
                 .toList();

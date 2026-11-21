@@ -50,6 +50,9 @@ public class Purchase {
 
     private String shipment;
 
+    @Column(name = "file_no")
+    private String fileNo;
+
     private Double quantity;
 
     @Column(name = "price_fc", precision = 19, scale = 4)

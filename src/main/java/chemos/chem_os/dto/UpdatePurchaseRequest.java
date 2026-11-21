@@ -18,6 +18,9 @@ public record UpdatePurchaseRequest(
         @JsonAlias({"shipName", "vesselName", "vessel_name"})
         String shipName,
         String shipment,
+        @JsonProperty("file_no")
+        @JsonAlias("fileNo")
+        String fileNo,
         Double quantity,
         BigDecimal priceFc,
         String currency,

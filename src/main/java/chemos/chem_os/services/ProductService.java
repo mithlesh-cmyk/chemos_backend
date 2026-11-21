@@ -15,6 +15,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductService {
 
+    private static final int SUGGESTION_MIN_QUERY_LENGTH = 2;
+    private static final int SUGGESTION_LIMIT = 10;
+
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
@@ -31,5 +34,18 @@ public class ProductService {
                 );
 
         return productsPage.map(productMapper::toDropDownResponse);
+    }
+
+    public List<ProductDropdownResponse> suggestProducts(String query) {
+        String cleanQuery = (query == null)
+                ? ""
+                : query.trim().replaceAll("\\s+", " ").toLowerCase();
+        if (cleanQuery.length() < SUGGESTION_MIN_QUERY_LENGTH) {
+            return List.of();
+        }
+
+        return productRepository.searchProducts(cleanQuery, PageRequest.of(0, SUGGESTION_LIMIT))
+                .map(productMapper::toDropDownResponse)
+                .getContent();
     }
 }

@@ -1,5 +1,6 @@
 package chemos.chem_os.controller;
 
+import chemos.chem_os.dto.ApiSuccessResponse;
 import chemos.chem_os.dto.CompanyCreationResponse;
 import chemos.chem_os.dto.CompanySuggestionResposne;
 import chemos.chem_os.dto.CreateCompanyRequest;
@@ -37,6 +38,16 @@ public class CompanyController {
     public List<CompanySuggestionResposne> searchCompanies(
             @RequestParam(value = "query", required = false, defaultValue = "") String query) {
         return companyService.searchCompanies(query);
+    }
+
+    @GetMapping("/suggestions")
+    public ApiSuccessResponse<List<CompanySuggestionResposne>> getCompanySuggestions(
+            @RequestParam String query) {
+        List<CompanySuggestionResposne> companies = companyService.suggestCompanies(query);
+        return ApiSuccessResponse.<List<CompanySuggestionResposne>>builder()
+                .message(companies.isEmpty() ? "No companies found." : "Companies fetched successfully.")
+                .data(companies)
+                .build();
     }
 
 }

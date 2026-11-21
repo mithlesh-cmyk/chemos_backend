@@ -33,6 +33,7 @@ public class PurchaseMapper {
                 .shipId(request.shipId())
                 .vesselName(request.shipName())
                 .shipment(request.shipment())
+                .fileNo(request.fileNo())
                 .quantity(request.quantity())
                 .priceFc(request.priceFc())
                 .currency(request.currency())
@@ -70,6 +71,7 @@ public class PurchaseMapper {
         if (request.shipId() != null) purchase.setShipId(request.shipId());
         if (request.shipName() != null) purchase.setVesselName(request.shipName());
         if (request.shipment() != null) purchase.setShipment(request.shipment());
+        if (request.fileNo() != null && !request.fileNo().isBlank()) purchase.setFileNo(request.fileNo());
         if (request.quantity() != null) purchase.setQuantity(request.quantity());
         if (request.priceFc() != null) purchase.setPriceFc(request.priceFc());
         if (request.currency() != null) purchase.setCurrency(request.currency());

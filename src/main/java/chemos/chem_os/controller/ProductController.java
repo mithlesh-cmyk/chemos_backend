@@ -1,5 +1,6 @@
 package chemos.chem_os.controller;
 
+import chemos.chem_os.dto.ApiSuccessResponse;
 import chemos.chem_os.dto.ProductDropdownResponse;
 import chemos.chem_os.services.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,5 +25,15 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return productService.searchProducts(query, page, size);
+    }
+
+    @GetMapping("/suggestions")
+    public ApiSuccessResponse<List<ProductDropdownResponse>> getProductSuggestions(
+            @RequestParam String query) {
+        List<ProductDropdownResponse> products = productService.suggestProducts(query);
+        return ApiSuccessResponse.<List<ProductDropdownResponse>>builder()
+                .message(products.isEmpty() ? "No products found." : "Products fetched successfully.")
+                .data(products)
+                .build();
     }
 }

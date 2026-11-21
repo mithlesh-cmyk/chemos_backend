@@ -37,6 +37,10 @@ public record CreatePurchaseRequest(
 
         String shipment,
 
+        @JsonProperty("file_no")
+        @NotBlank(message = "file_no is required")
+        String fileNo,
+
         @NotNull(message = "quantity is required")
         Double quantity,
 
