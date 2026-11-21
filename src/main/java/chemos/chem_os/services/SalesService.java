@@ -98,6 +98,30 @@ public class SalesService {
         return salesRepository.findAll(spec, pageable);
     }
 
+    // Free-text search across product name, company_to, company_from and file_no (partial, case-insensitive).
+    public Page<Sales> searchSales(String q, Pageable pageable) {
+        String term = q == null ? "" : q.trim().toLowerCase();
+        if (term.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        String pattern = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+
+        Specification<Sales> spec = (root, query, cb) -> {
+            var productJoin = root.join("product", JoinType.LEFT);
+            return cb.or(
+                    cb.like(cb.lower(productJoin.get("name")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("companyTo")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("companyFrom")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("fileNo")), pattern, '\\')
+            );
+        };
+        if (currentUserService.isRowScoped()) {
+            String owner = currentUserService.getUsername();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("createdBy"), owner));
+        }
+        return salesRepository.findAll(spec, pageable);
+    }
+
     // Shared fetch point for every single-record read/write below — the ownership check here
     // covers update/confirm/cancel/unconfirm automatically since they all call this first.
     public Sales getSaleById(String id) {

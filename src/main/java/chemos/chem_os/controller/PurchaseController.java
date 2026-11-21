@@ -64,6 +64,26 @@ public class PurchaseController {
     }
 
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
+    @GetMapping("/search")
+    public ResponseEntity<ApiSuccessResponse<Page<Purchase>>> searchPurchases(
+            @RequestParam String q,
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable) {
+
+        Page<Purchase> purchases = purchaseService.searchPurchases(q, pageable);
+
+        return ResponseEntity.ok(
+                ApiSuccessResponse.<Page<Purchase>>builder()
+                        .message(purchases.isEmpty() ? "No purchases found." : "Purchases fetched successfully.")
+                        .data(purchases)
+                        .build()
+        );
+    }
+
+    @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @GetMapping("/received-value")
     public ResponseEntity<ApiSuccessResponse<PurchaseReceivedValueResponse>> getTotalReceivedValue(
             @RequestParam(required = false) String status,

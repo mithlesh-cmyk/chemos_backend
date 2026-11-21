@@ -75,6 +75,7 @@ public class SalesMapper {
                 .companyFrom(request.companyFrom())
                 .companyTo(request.companyTo())
                 .product(resolveProduct(request.productId()))
+                .fileNo(request.fileNo())
                 .quantity(request.quantity())
                 .price(request.price())
                 .payment(request.payment())
@@ -101,6 +102,7 @@ public class SalesMapper {
         sale.setCompanyTo(request.companyTo());
         sale.setCompanyFrom(request.companyFrom());
         sale.setProduct(resolveProduct(request.productId()));
+        if (request.fileNo() != null && !request.fileNo().isBlank()) sale.setFileNo(request.fileNo());
         sale.setQuantity(request.quantity());
         sale.setPrice(request.price());
         sale.setPayment(request.payment());

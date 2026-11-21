@@ -8,6 +8,7 @@ import chemos.chem_os.dto.UpdateLiftedQtyRequest;
 import chemos.chem_os.dto.UpdateSaleRequest;
 import chemos.chem_os.model.Sales;
 import chemos.chem_os.services.SalesService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +33,7 @@ public class SalesController {
 
     @PreAuthorize("hasAuthority('SALE_CREATE')")
     @PostMapping("/create/sales_order")
-    public ResponseEntity<Sales> salesForm(@RequestBody CreateSaleRequest salesRecord){
+    public ResponseEntity<Sales> salesForm(@Valid @RequestBody CreateSaleRequest salesRecord){
         Sales savedSales = salesService.createSale(salesRecord);
         return ResponseEntity.ok(savedSales);
     }
@@ -44,6 +45,14 @@ public class SalesController {
             @RequestParam(required = false) String product,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(salesService.getAllSales(status, product, pageable));
+    }
+
+    @PreAuthorize("hasAuthority('SALE_VIEW')")
+    @GetMapping("/search")
+    public ResponseEntity<Page<Sales>> searchSales(
+            @RequestParam String q,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(salesService.searchSales(q, pageable));
     }
 
     @PreAuthorize("hasAuthority('SALE_VIEW')")

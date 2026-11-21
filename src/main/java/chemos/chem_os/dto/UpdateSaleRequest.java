@@ -1,6 +1,7 @@
 package chemos.chem_os.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record UpdateSaleRequest(
         String salesType,
@@ -8,6 +9,9 @@ public record UpdateSaleRequest(
         String companyFrom,
         @JsonAlias({"product", "productId"})
         String productId,
+        @JsonProperty("file_no")
+        @JsonAlias("fileNo")
+        String fileNo,
         Double quantity,
         Double price,
         String payment,

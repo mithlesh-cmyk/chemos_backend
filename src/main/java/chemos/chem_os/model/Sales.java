@@ -44,6 +44,9 @@ public class Sales {
     @Column(name = "company_from")
     private String companyFrom;
 
+    @Column(name = "file_no")
+    private String fileNo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Products product;
