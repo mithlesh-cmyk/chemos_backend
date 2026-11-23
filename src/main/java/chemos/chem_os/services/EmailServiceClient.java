@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.http.HttpTimeoutException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -109,7 +110,8 @@ public class EmailServiceClient {
         } catch (EmailServiceException e) {
             throw e;
         } catch (ResourceAccessException e) {
-            boolean timeout = e.getCause() instanceof SocketTimeoutException;
+            boolean timeout = e.getCause() instanceof SocketTimeoutException
+                    || e.getCause() instanceof HttpTimeoutException;
             log.error("Email service unreachable ({}): {}", timeout ? "timeout" : "connection", e.getMessage());
             throw new EmailServiceException(timeout ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
                     "Email service unavailable");

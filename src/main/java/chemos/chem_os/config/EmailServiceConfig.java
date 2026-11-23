@@ -3,9 +3,10 @@ package chemos.chem_os.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 
 @Configuration
@@ -17,8 +18,12 @@ public class EmailServiceConfig {
     // campaign is slow, hence the long read timeout.
     @Bean(name = "emailRestClient")
     public RestClient emailRestClient(@Value("${app.email-service.api-key:}") String apiKey) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
+        // HttpURLConnection (SimpleClientHttpRequestFactory) rejects PATCH, so use the JDK HttpClient.
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(3))
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(Duration.ofSeconds(60));
 
         RestClient.Builder builder = RestClient.builder().requestFactory(factory);
