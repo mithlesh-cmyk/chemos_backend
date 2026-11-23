@@ -316,7 +316,7 @@ PurchaseService {
         List<Purchase> purchases = purchaseRepository.findByStatus_Id("CONFIRMED");
 
         CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
+                .setHeader("PURCHASE_ID", "FILE_NO", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
                 .build();
 
         StringWriter sw = new StringWriter();
@@ -324,6 +324,7 @@ PurchaseService {
             for (Purchase p : purchases) {
                 printer.printRecord(
                         p.getId(),
+                        p.getFileNo() != null ? p.getFileNo() : "",
                         p.getEta() != null ? p.getEta().toString() : "",
                         p.getVesselName() != null ? p.getVesselName() : "",
                         p.getProduct() != null ? p.getProduct().getName() : "",
@@ -347,9 +348,12 @@ PurchaseService {
 
         LocalDateTime sessionTimestamp = LocalDateTime.now(BUSINESS_ZONE);
 
+        // Read column names from the file's header row so columns are matched by name, not position
+        // (keeps older exports without FILE_NO importable).
         CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader("PURCHASE_ID", "VESSEL_DATE", "VESSEL_NAME", "PRODUCT", "PORT", "PHYSICAL_STOCK")
+                .setHeader()
                 .setSkipHeaderRecord(true)
+                .setTrim(true)
                 .build();
 
         try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
@@ -373,7 +377,8 @@ PurchaseService {
                     continue;
                 }
 
-                if (!purchaseRepository.existsById(purchaseId)) {
+                Purchase purchase = purchaseRepository.findById(purchaseId).orElse(null);
+                if (purchase == null) {
                     errors.add("Row " + record.getRecordNumber() + ": no purchase found for PURCHASE_ID=" + purchaseId);
                     skipped++;
                     continue;
@@ -401,6 +406,7 @@ PurchaseService {
 
 // value changed — store previous, update current
                 entry.setPreviousStock(oldValue != -1 ? oldValue : null);
+                entry.setFileNo(purchase.getFileNo());
                 entry.setPhysicalStock(stock);
                 entry.setUpdatedAt(sessionTimestamp);
                 entry.setUpdatedBy(currentUser);

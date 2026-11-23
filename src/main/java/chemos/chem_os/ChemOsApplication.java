@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-public class ChemOsApplication {
+public class   ChemOsApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(ChemOsApplication.class, args);

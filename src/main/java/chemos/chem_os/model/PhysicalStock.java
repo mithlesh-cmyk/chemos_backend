@@ -23,6 +23,9 @@ public class PhysicalStock {
     @Column(name = "purchase_id", nullable = false, unique = true)
     private String purchaseId;
 
+    @Column(name = "file_no")
+    private String fileNo;
+
     @Column(name = "physical_stock")
     private Double physicalStock;
 
